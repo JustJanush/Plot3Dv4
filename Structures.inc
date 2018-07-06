@@ -9,7 +9,7 @@
 *
 *    |html <hr width=50% align="left">
 * VERSION
-*  3.2.0.2, tested on PovRay 3.7.
+*  4.0.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -25,16 +25,17 @@
 *  AGH University of Science and Technology
 * HISTORY
 *  2016-01-29/3.2.0.1 - macro ArMerge () added
+*  2018-07-05/4.0.0 - cleanup for Prometheus deployment
 ****
   end of RoboDoc comment
 ****/
 
 #version 3.7;
 #ifndef(Structures_INC)
-#declare Structures_INC = "2016-02-03"; // last editing date
+#declare Structures_INC = "2018-07-06"; // last editing date
 
 #declare _FileName   = "Structures.inc";
-#declare _FileVerMaj = "3.2.0.2";
+#declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = Structures_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -520,104 +521,4 @@
    #end                     
 #end
 
-
-/* Water ice simple six molecule flat cluster.  
-   This library part, do NOT remove!
- #declare Hbond = 1.86; // [A] hydrogen bond
- #declare tbnd = H2O_Bonds; // 1
- #declare tarr = H2O_Atoms;        
- #declare vp = (Hbond+HOdist)*< .5,0,-sin(radians(60))>;
- #declare vm = (Hbond+HOdist)*<-.5,0,-sin(radians(60))>;
- #declare vx = (Hbond+HOdist)*<1,0,0>;
- 
- StrRotate(tarr, y, -dAngleHOH) // 1st
- #declare tmpr = H2O_Atoms; // 2nd
-   StrRotate(tmpr, y, -dAngleHOH+60 )
-   StrTrans(tmpr, vx)//<Hbond+HOdist, 0, 0>)
- #declare tbnd = BndMerge( tbnd, H2O_Bonds,  dimension_size(tarr,1)-1);   // 4
- #declare tarr = StrMerge( tarr, tmpr);  
-
- #declare tmpr = H2O_Atoms; // 3rd
-   StrRotate(tmpr, y, -dAngleHOH+120 )
-   StrTrans(tmpr, vx+vp)
- #declare tbnd = BndMerge( tbnd, H2O_Bonds, dimension_size(tarr,1)-1);    // 7
- #declare tarr = StrMerge( tarr, tmpr);  
-
- #declare tmpr = H2O_Atoms; // 4th
-   StrRotate(tmpr, y, -dAngleHOH+180  )
-   StrTrans(tmpr, vx+vp+vm)
- #declare tbnd = BndMerge( tbnd, H2O_Bonds, dimension_size(tarr,1)-1);    // 10
- #declare tarr = StrMerge( tarr, tmpr);  
-
- #declare tmpr = H2O_Atoms; // 5th
-   StrRotate(tmpr, y, -dAngleHOH+240  )
-   StrTrans(tmpr, vp+vm)
- #declare tbnd = BndMerge( tbnd, H2O_Bonds, dimension_size(tarr,1)-1);    // 13
- #declare tarr = StrMerge( tarr, tmpr);  
-
- #declare tmpr = H2O_Atoms; // 6th
-   StrRotate(tmpr, y, -dAngleHOH+300  )
-   StrTrans(tmpr, vm)
- #declare tbnd = BndMerge( tbnd, H2O_Bonds, dimension_size(tarr,1)-1);   // 16
- #declare tarr = StrMerge( tarr, tmpr);                                     
- 
- #declare HB = array[6][3]{
-    { 1,18,3}  //  1
-   ,{ 4, 3,3}  //  4
-   ,{ 7, 6,3}  //  7
-   ,{10, 9,3}  // 10
-   ,{13,12,3}  // 13
-   ,{16,15,3}  // 16
- };
-
- #declare tbnd = ArMerge( tbnd, HB );
-
-// StrTrans(tarr, <-4, 0, 4>)
- StrRotate(tarr, y, 25 )
-
- #declare Molecule = object{CreateStruct( tarr, tbnd, 0.07)}; // *** PTube, Bonds, .05)};7
- object{Molecule} 
-*/                                  
-
-#end // put this line on the very end!
-
-// temporary trashcan
-//============[ Water molecule ]============
-//duplicate
-//#declare AngleHOH = radians(104.45);     //  angle between H-O bonds in [rd]
-//#declare sAngleHOH = sin(AngleHOH);           
-//#declare cAngleHOH = cos(AngleHOH);           
-
-//#declare H1 = <HOdist, 0, 0>;    // 1. and 2. hydrogen
-//#declare H2 = <HOdist*cAngleHOH, 0, -HOdist*sAngleHOH>;
-                       
-//#declare H2O_atoms = array[4][8]  // charge, x,y,z, R, R_m, epsilon, multifunction see below
-//                             [..][7] color component: [..][0]>0 Red; <0 Blue; (0;1)-hue component of HSL color; >=1-element number in Mendelejew table, may encode radius as well, 1-H, 2=He, ....
-//                 { // POVRay coordinates         
-//                   //          1      2     3     4       5     6     7       8
-//                           {  3,         0, 0,       0,    0,    0,        0, 0}, // MaxN=[0][0] - number of molecules in the table:[1..MaxN]
-//                           { -2,         0, 0,       0, RHyd, RmLJ, epsiqeff, 0}, //  oxygen                  6 - 7 - 8 - 9 - 10 /+/ |  
-//                           {  1,      H1.x, H1.y, H1.z, RHyd, RmLJ, epsiqeff, 0}, //  H_1
-//                           {  1,      H2.x, H2.y, H2.z, RHyd, RmLJ, epsiqeff, 0}, //  H_2
-//                 };        
-//============================================================================================                       
-
-//#declare WaterMolecule = merge {
-//      sphere{ H1, RHyd texture{ pigment{color  Red/2} finish{emission .71 reflection metallic phong .4} }}
-//      cylinder {0, H1, RHyd/2.3 pigment{color Silver} } 
-//      sphere{ 0, ROxy texture{  pigment{color Blue/2} finish{emission .71 reflection metallic phong .4} }}
-//      cylinder {0, H2, RHyd/2.3 pigment{color Silver} }
-//      sphere{ H2, RHyd texture{ pigment{color  Red/2} finish{emission .71 reflection metallic phong .4} }}
-//} /// end merge{}  
-
-//#declare WaterV0 = function(x,y,z, R){kqcoef*(
-//                         -2/sqrt(pow(   x,2)+ pow(y,2) + pow(z,2))+      // oxygen y=0;
-//                          1/sqrt(pow(x-R,2) + pow(y,2) + pow(z,2))+      // hydrogen y = 0; at <R, 0, 0>
-//                          1/sqrt(pow((x-R*cAngleHOH),2) 
-//                            + pow(y,2)  // hydrogen at <-R, 0, R>
-//                            + pow((z+R*sAngleHOH),2))
-//                          )
-//                };
-//
-                             
-
+#end //(Structures_INC) 
