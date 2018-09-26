@@ -6,7 +6,7 @@
 *   Fig.[scFinishes] Scene employing finishes declared in this library
 *   |html <hr width=50% align="left">
 * VERSION
-*  3.2.0.1, tested on PovRay 3.7.
+*  4.0.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -37,7 +37,7 @@
 #end
 
 #declare _FileName   = "scFinish.inc";
-#declare _FileVerMaj = "3.2.0.1";
+#declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = scFinish_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 

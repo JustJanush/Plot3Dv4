@@ -32,7 +32,7 @@
 
 #version 3.7;
 #ifndef(Structures_INC)
-#declare Structures_INC = "2018-07-06"; // last editing date
+#declare Structures_INC = "2018-09-17"; // last editing date
 
 #declare _FileName   = "Structures.inc";
 #declare _FileVerMaj = "4.0.0";
@@ -301,6 +301,77 @@
 
 
 ///====[ manipulation library begin ]========
+/****M* Structures.inc/CreatePStruct
+* PURPOSE
+*  Makes POVRay ready object, uses data in REAL space
+* SYNOPSIS
+*/
+#macro CreatePStruct (_PTs, _BNs, _D) // molecules table in REAL space, bonds table, base diameter of bond, may be modified due to bondage type
+/*
+* INPUTS
+*  garray - structure
+*  garray - bonds
+* OUTPUTS
+*  POVRay object ready to render
+* SEE ALSO
+*  StrTrans, StrMerge, StrRotate, BndMerge, ArMerge
+*
+******/
+#merge{ 
+#declare _MxN = _PTs[0][0];
+#if (_MxN>2) #merge{ #end // trick to avoid CSG warning   
+  #for(i, 1, _MxN) 
+     sphere{<_PTs[i][2], _PTs[i][3], -_PTs[i][1]>, _mzoom*_PTs[i][4]
+             texture{
+                 #if (_PTs[i][0] > 0)
+                     pigment{color  abs(_PTs[i][0])*Red/3 } 
+                 #elseif (_PTs[i][0] < 0) 
+                      pigment{color abs(_PTs[i][0])*Blue/3}
+                 #else  // analyze type of element from periodic table or moderate Hue
+                      #declare _H = _PTs[i][7];
+                      #if (_H=0) // just gray
+                         pigment{color rgb<.5,.5,.25>}
+                      #elseif(_H<1)   
+                         #declare cl = CHSL2RGB(<_H*180, 1, .3 .6, 1.0>); // light gray opaque
+                         pigment{ color rgbt <cl.red, cl.green, cl.blue, 0>}
+                      #else // appearence defined in periodic table                      
+                         #declare el = _PTs[i][7];       
+                         #declare cl = CHSL2RGB(<PeriodicTable[el][3],PeriodicTable[el][4],PeriodicTable[el][5], .6, 1.0>); // light gray opaque
+                         pigment{ color rgbt <cl.red, cl.green, cl.blue, 0.0>}
+                         //pigment{ color rgbt <1, 1, 0, 0>} // yellow is set temporary carbon hack
+                      #end   
+                 #end      
+                  // finish{scDullMirror emission .1 reflection metallic phong .7} 
+                  // finish{ scDullMirror emission .7 }
+                  // finish{ Dull emission .1 reflection metallic phong .7}
+                  // finish{ phong 1 phong_size 300 diffuse 0.51 reflection 0.123}
+                  finish{ phong 1 phong_size 300 diffuse 0.51 reflection {0.01 .8} emission .1}
+                  // finish{ specular 1 roughness .01 diffuse 0.5 reflection {.001 .9 falloff 2 exponent 1 metallic .6}}
+             }    
+     }
+  #end                      
+#if (_MxN>2) } #end  // trick to avoid CSG warning   
+
+// OR: Bright_Bronze, NBglass, Tinny_Brass, Soft_Silver, NBoldglass, T_Yellow_Glass, T_Copper_4A, T_Gold_1B 
+#declare _MxB = dimension_size(_BNs,1)-1; // _BNs[0][0]; // ! avoid glassy interior  or transparent texture
+#if (_MxB>2) #merge{ #end   // trick to avoid CSG warning   
+  #for(i, 1, _MxB) 
+     cylinder{<_PTs[_BNs[i][0]][2], _PTs[_BNs[i][0]][3], -_PTs[_BNs[i][0]][1]>,  
+              <_PTs[_BNs[i][1]][2], _PTs[_BNs[i][1]][3], -_PTs[_BNs[i][1]][1]>, 
+                #switch(_BNs[i][2])                                              // bondage type
+                    #case(0)     _mzoom*_D texture{ pigment{color            Silver} finish{Dull}} #break; // "normal"
+                    #case(1) 1.5*_mzoom*_D texture{ pigment{color          Maroon/2} finish{Dull}} #break; // "double normal"
+                    #case(2) 2.0*_mzoom*_D texture{ pigment{color           Green/3} finish{Dull}} #break; // "ionic"                  
+                    #case(3) 1.3*_mzoom*_D texture{ pigment{color rgb <0.0,.5,.5,0>} finish{Dull}} #break; // "hydrogen bond"                  
+                    #case(4) 1.3*_mzoom*_D texture{ pigment{color rgb <1.0,.0,.0,0>} finish{Dull}} #break; // "testing"                  
+                    #else        _mzoom*_D texture{ pigment{color            Silver} finish{Dull}} #break; // ...and so on ;)                                              
+                #end
+     }    
+  #end      
+#if (_MxB>2) } #end  // trick to avoid CSG warning   
+}  
+#end // CreatePStruct()
+
 /****M* Structures.inc/CreateStruct
 * PURPOSE
 *  Makes POVRay ready object
@@ -337,8 +408,8 @@
                       #else // appearence defined in periodic table                      
                          #declare el = _PTs[i][7];       
                          #declare cl = CHSL2RGB(<PeriodicTable[el][3],PeriodicTable[el][4],PeriodicTable[el][5], .6, 1.0>); // light gray opaque
-                         // pigment{ color rgbt <cl.red, cl.green, cl.blue, 0>}
-                         pigment{ color rgbt <1, 1, 0, 0>} // yellow is set temporary carbon hack
+                         pigment{ color rgbt <cl.red, cl.green, cl.blue, 0>}
+                         //pigment{ color rgbt <1, 1, 0, 0>} // yellow is set temporary carbon hack
                       #end   
                  #end      
                  // finish{emission .61 reflection metallic phong .4} 
@@ -368,6 +439,7 @@
 #if (_MxB>2) } #end  // trick to avoid CSG warning   
 }  
 #end // CreateStruct()
+
 
 /****M* Structures.inc/StrMerge
 * PURPOSE

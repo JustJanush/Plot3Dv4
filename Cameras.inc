@@ -4,7 +4,7 @@
 *   TODO: still a lot!
 *   |html <hr width=50% align="left">
 * VERSION
-*  3.2.0.6, tested on PovRay 3.7.
+*  4.0.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -31,11 +31,11 @@
 ****/
 
 #ifndef(Cameras_INC)
-#declare Cameras_INC = "2018-04-05"; // last modification date
+#declare Cameras_INC = "2018-09-17"; // last modification date
 #version 3.7;
 // common includes & definitions
 #declare _FileName   = "Cameras.inc";
-#declare _FileVerMaj = "3.3.0.0";
+#declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = Cameras_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")

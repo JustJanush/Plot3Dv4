@@ -9,7 +9,7 @@
 *   |html <hr width=50% align="left">
 *
 * VERSION
-*  v. 3.1.0.2, tested on PovRay 3.7
+*  v. 4.0.0, tested on PovRay 3.7
 *
 * AUTHOR
 *  Janusz Opi³a Ph.D.
@@ -29,11 +29,11 @@
 
 // TODO: Interval computations - implementation of "fuzzy points"
 #ifndef(Mesh2Surf_INC)
-#declare Mesh2Surf_INC = "2014-05-25"; // last modification date
+#declare Mesh2Surf_INC = "2018-09-17"; // last modification date
 // common includes & definitions
 #version 3.7;
 #declare _FileName   = "Mesh2Surf.inc";
-#declare _FileVerMaj = "3.1.0.1";
+#declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = Mesh2Surf_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")

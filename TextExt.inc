@@ -7,7 +7,7 @@
 *   polish national characters is displayed. Do not even try to pronounciate it ;)
 *   |html <hr width=50% align="left">
 * VERSION
-*  3.2.0.4, tested on PovRay 3.7.
+*  4.0.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -35,10 +35,10 @@
 
 #version 3.7;
 #ifndef(TextExt_INC)
-#declare TextExt_INC = "2018-04-28"; // last edition date
+#declare TextExt_INC = "2018-09-17"; // last edition date
 
 #declare _FileName   = "TextExt.inc";
-#declare _FileVerMaj = "3.2.0.4";
+#declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = TextExt_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -215,7 +215,6 @@
 #declare _oe_  = "\u00F6";  // ö
 #declare _OE_  = "\u00D6";  // Ö
 
-
 //
 #declare _at_     = "\u0040";  // @
 #declare _spc_    = "\u0020";  // just Space
@@ -223,8 +222,10 @@
 #declare _mu_     = "\u00B5";  // greek mu
 #declare _cdot_   = "\u00B7";  // multiplication sign
 #declare _pi_     = "\u03C0";  // pi sign
+#declare _phi_    = "\u03c6";  // italic small phi 
 #declare _ro_     = "\u03C1";  // rho
 #declare _tau_    = "\u03C4";  // tau
+#declare _tht_    = "\u03D1";  // theta small
 #declare _deg_    = "\u00B0";  // degree sign
 #declare _par_    = "\u00A7";  // paragraph §
 #declare _promil_ = "\u2030";  // promile ‰

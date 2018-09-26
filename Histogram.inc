@@ -15,7 +15,7 @@
 *     **   License: GNU GPL                                  **
 *     **   Homepage:    http://scpovplot3d.sourceforge.net   **
 *     *********************************************************
-*     **   version: 3.0.7 (& have a nice time ;)             **
+*     **   version: 3.0.8 (& have a nice time ;)             **
 *     *********************************************************
 * AUTHOR
 *  Janusz Opi³a Ph.D.
@@ -30,16 +30,17 @@
 *  
 * HISTORY
 *  2017-02-02, 3.1.0.7 - X-axis description impvnts
+*  2018-08-30, 3.1.0.8 - Vertical axis description bug fixed
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef  (Histogram_INC)
-#declare Histogram_INC="2017-02-03";
+#declare Histogram_INC="2018-08-30";
 #version 3.7;
 
 #local _FileName   = "Histogram.inc";
-#local _FileVerMaj = "3.1.0.7";
+#local _FileVerMaj = "3.1.0.8";
 #local _FileVerMin = Histogram_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -322,7 +323,7 @@
          scale LettrSize
          rotate ((camera_z>0?180:0)+DscrAngle)*y
          translate<(camera_x>0?SceneMinX-sgn(camera_z)*ShiftXY:SceneMaxX-sgn(camera_z)*ShiftXY),
-                    YScaleFactor*(DscrVrtAxe[Cnt]-.3),
+                    YScaleFactor*(DscrVrtAxe[Cnt])-LettrSize/2.0,  // 2018-08-30
                     (camera_z<0?1.05*(SceneMaxZ-SceneMinZ):(SceneMinZ-0.05*(SceneMaxZ-SceneMinZ)))>
       }
     #declare Cnt=Cnt+1;

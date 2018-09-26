@@ -8,7 +8,7 @@
 *   Fig.[Potential] Examples of visualisation of coulombean potential around the water molecule
 *   |html <hr width=50% align="left">        
 * VERSION
-*  3.3.0.0, tested on PovRay 3.7.
+*  4.0.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -31,10 +31,10 @@
 
 #version 3.7;
 #ifndef(Potential_INC)
-#declare Potential_INC = "2018-02-18"; // last editing date        
+#declare Potential_INC = "2018-09-22"; // last editing date        
 
 #declare _FileName   = "Potential.inc";
-#declare _FileVerMaj = "3.4.0.0";
+#declare _FileVerMaj = "4.0.1";
 #declare _FileVerMin = Potential_INC; 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -127,6 +127,68 @@
 ******/
   #declare _TanTau = _tt;
 #end
+
+#declare _gMin  = 0.0; // [mV/A] gradient range 
+#declare _gMin2 = 0.0; // [mV/A] gradient range 
+#declare _gMax  = 1E3; // [mV/A] gradient range 
+
+/****M* Potential.inc/SetGradMin
+* PURPOSE
+*  Sets parameter _gMin for gradient texture mapping
+* SYNOPSIS
+*/
+#macro SetGradMin(_g)
+/*
+* INPUTS
+*  _g - double - parameter value
+* OUTPUTS
+*  sets internal parameter _gMin 
+* SEE ALSO
+*  SetGradMin2 (), SetGradMax ()
+*
+******/
+  #declare _gMin  = _g;    
+#end
+
+/****M* Potential.inc/SetGradMin2
+* PURPOSE
+*  Sets parameter _gMin for gradient texture mapping
+* SYNOPSIS
+*/
+#macro SetGradMin2(_g)
+/*
+* INPUTS
+*  _g - double - parameter value
+* OUTPUTS
+*  sets internal parameter _gMin2 
+* SEE ALSO
+*  SetGradMin (), SetGradMax ()
+*
+******/
+  #declare _gMin2 = 0;
+#end  
+
+/****M* Potential.inc/SetGradMax
+* PURPOSE
+*  Sets parameter _gMin for gradient texture mapping
+* SYNOPSIS
+*/
+#macro SetGradMax(_g)           
+/*
+* INPUTS
+*  _g - double - parameter value
+* OUTPUTS
+*  sets internal parameter _gMin2 
+* SEE ALSO
+*  SetGradMin (), SetGradMin2 ()
+*
+******/
+  #declare _gMax  = _g; // [mV/A] gradient range, tuned to THIS example; (1-clock)*5E3+clock*5E4; // 5E7;
+#end  
+
+
+
+
 
 // default value of isosurface texture
 #declare _IsoTexture = texture {
@@ -764,9 +826,11 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
 } 
 // */
 
-  //===========================//
- //    Drawing facility       //
-//===========================//
+#declare _ident = function(x,y,z,id){id};
+
+  //======================================================//
+ //    Drawing facility, gradient for a whole structure  //
+//======================================================//
 #macro DrawInterpolSrf(_trsh, _dd) // _trsh - isosurface threshold
 #debug concat("=>dd= ",str(_dd,6,4),"==\n")   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
@@ -804,7 +868,7 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                      |  (QVr[ixn][iyn][izn][4])     
                     ) // do nothing
 //                #debug concat(ttr_ " Cell [", str(ixn,3,0), "Cell [", str(ixn,3,0),"][", str(iyn,3,0),"][",str(izn,3,0),"] ",str(QVr[ixn][iyn][izn][4],3,0), "  ommited, \n")    
-                #else
+                #else                  
                     isosurface{
                       function{VV1( x,y,z,    // internal conversion from real to internal representation
                                     QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
@@ -842,6 +906,225 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
         #end 
     #end
 #end
+
+
+   //======================================================//
+  //    Drawing facility gradient implementaion per cell, //
+ //    simplified formulation                            //
+//======================================================//
+#macro DrawInterpolGrdSrf1(_trsh, _dd) // _trsh - isosurface threshold
+#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+#declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
+
+    #declare _dd3 = pow(_dd,3);
+    #local _CellsFound = 0;
+    #for(izn,0,dimension_size(QVr,3)-2)
+        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        #for(iyn,0,dimension_size(QVr,2)-2)
+            #for(ixn,0,dimension_size(QVr,1)-2)                               
+                // do not analyze "empty" cells
+                #if (_trsh<min(
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], // Q1u
+                                    QVr[  ixn][iyn+1][izn+1][0], // Q2u
+                                    QVr[ixn+1][  iyn][izn+1][0], // Q3u
+                                    QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
+                           ) 
+                    | _trsh>max(
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], // Q1u
+                                    QVr[  ixn][iyn+1][izn+1][0], // Q2u 
+                                    QVr[ixn+1][  iyn][izn+1][0], // Q3u
+                                    QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
+                            )      
+                     |  (QVr[ixn][iyn][izn][4])     
+                    ) // do nothing
+//                #debug concat(ttr_ " Cell [", str(ixn,3,0), "Cell [", str(ixn,3,0),"][", str(iyn,3,0),"][",str(izn,3,0),"] ",str(QVr[ixn][iyn][izn][4],3,0), "  ommited, \n")    
+                #else                  
+                    #local _grd = Gradient_Length( // for external gradient
+                                           function{ VV1( x,y,z,    // internal conversion from real to internal representation
+                                             QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
+                                             
+                                             // bottom face
+                                             QVr[  ixn][  iyn][izn][0],   // Q1d = _Q000
+                                             QVr[  ixn][iyn+1][izn][0],   // Q2d = _Q010
+                                             QVr[ixn+1][  iyn][izn][0],   // Q3d = _Q100
+                                             QVr[ixn+1][iyn+1][izn][0],   // Q4d = _Q110
+                                             
+                                             // upper face
+                                             QVr[  ixn][  iyn][izn+1][0], 
+                                             QVr[  ixn][iyn+1][izn+1][0],  
+                                             QVr[ixn+1][  iyn][izn+1][0], 
+                                             QVr[ixn+1][iyn+1][izn+1][0],
+                                             _dd, _dd3)}, 
+                                          (<QVr[ixn  ][iyn  ][izn  ][2], QVr[ixn  ][iyn  ][izn  ][3], -QVr[ixn  ][iyn  ][izn  ][1]>+
+                                           <QVr[ixn+1][iyn+1][izn+1][2], QVr[ixn+1][iyn+1][izn+1][3], -QVr[ixn+1][iyn+1][izn+1][1]>)/2);
+                    #local _grd = clamp(_grd,0,1);                       
+                                           
+                    isosurface{
+                      function{VV1( x,y,z,    // internal conversion from real to internal representation
+                                    QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
+                                    
+                                    // bottom face
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d = _Q000
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d = _Q010
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d = _Q100
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d = _Q110
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], 
+                                    QVr[  ixn][iyn+1][izn+1][0],  
+                                    QVr[ixn+1][  iyn][izn+1][0], 
+                                    QVr[ixn+1][iyn+1][izn+1][0],
+                                    _dd, _dd3
+                                    ) 
+                      }               
+                      contained_by{ 
+                            box{
+                                 <QVr[  ixn][  iyn][  izn][2], QVr[  ixn][  iyn][  izn][3], -QVr[  ixn][  iyn][  izn][1]>,     // "root" of elementary cell >,
+                                 <QVr[ixn+1][iyn+1][izn+1][2], QVr[ixn+1][iyn+1][izn+1][3], -QVr[ixn+1][iyn+1][izn+1][1]>      // "root" of elementary cell
+                            }
+                      }
+                      threshold _trsh
+                      accuracy _Accur 
+                      all_intersections
+                      max_gradient _MaxG ///1.1  
+                      evaluate _MaxG*.7, sqrt(1/.7), .7  //.1, 1.4, .7
+                      open               
+                      // texture{_IsoTexture}
+                      texture{
+                         pigment{
+                            function{_ident(x,y,z,_grd)}
+                            color_map{_RGBMap}
+                         }
+                      }
+                    }      
+                    #local _CellsFound = _CellsFound+1;
+                #end
+            #end 
+        #end 
+        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
+    #end
+#end
+
+  //=====================================================//
+ //    Drawing facility gradient implementaion per cell //
+//=====================================================//
+#macro DrawInterpolGrdSrf(_trsh, _dd) // _trsh - isosurface threshold
+#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+#declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
+
+    #declare _dd3 = pow(_dd,3);
+    #local _CellsFound = 0;
+    #for(izn,0,dimension_size(QVr,3)-2)
+        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        #for(iyn,0,dimension_size(QVr,2)-2)
+            #for(ixn,0,dimension_size(QVr,1)-2)                               
+                // do not analyze "empty" cells
+                #if (_trsh<min(
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], // Q1u
+                                    QVr[  ixn][iyn+1][izn+1][0], // Q2u
+                                    QVr[ixn+1][  iyn][izn+1][0], // Q3u
+                                    QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
+                           ) 
+                    | _trsh>max(
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], // Q1u
+                                    QVr[  ixn][iyn+1][izn+1][0], // Q2u 
+                                    QVr[ixn+1][  iyn][izn+1][0], // Q3u
+                                    QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
+                            )      
+                     |  (QVr[ixn][iyn][izn][4])     
+                    ) // do nothing
+
+                #else        
+                    #ifdef(_grd0) #undef _grd0 #end
+                    #declare _grd0 = function(x,y,z){
+                        VV1( x, y, z,    // internal conversion from real to internal representation
+                            QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
+                            
+                            // bottom face
+                            QVr[  ixn][  iyn][izn][0],   // Q1d = _Q000
+                            QVr[  ixn][iyn+1][izn][0],   // Q2d = _Q010
+                            QVr[ixn+1][  iyn][izn][0],   // Q3d = _Q100
+                            QVr[ixn+1][iyn+1][izn][0],   // Q4d = _Q110
+                            
+                            // upper face
+                            QVr[  ixn][  iyn][izn+1][0], 
+                            QVr[  ixn][iyn+1][izn+1][0],  
+                            QVr[ixn+1][  iyn][izn+1][0], 
+                            QVr[ixn+1][iyn+1][izn+1][0],
+                            _dd, _dd3)
+                    }                                 
+                    #ifdef(_grd) #undef _grd #end
+                    #declare _grd = fn_Gradient(_grd0);
+                    isosurface{
+                       function{VV1( x,y,z,    // internal conversion from real to internal representation
+                                    QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
+                                    
+                                    // bottom face
+                                    QVr[  ixn][  iyn][izn][0],   // Q1d = _Q000
+                                    QVr[  ixn][iyn+1][izn][0],   // Q2d = _Q010
+                                    QVr[ixn+1][  iyn][izn][0],   // Q3d = _Q100
+                                    QVr[ixn+1][iyn+1][izn][0],   // Q4d = _Q110
+                                    
+                                    // upper face
+                                    QVr[  ixn][  iyn][izn+1][0], 
+                                    QVr[  ixn][iyn+1][izn+1][0],  
+                                    QVr[ixn+1][  iyn][izn+1][0], 
+                                    QVr[ixn+1][iyn+1][izn+1][0],
+                                    _dd, _dd3
+                                    ) 
+                      }               
+                      contained_by{ 
+                            box{
+                                 <QVr[  ixn][  iyn][  izn][2], QVr[  ixn][  iyn][  izn][3], -QVr[  ixn][  iyn][  izn][1]>,     // "root" of elementary cell >,
+                                 <QVr[ixn+1][iyn+1][izn+1][2], QVr[ixn+1][iyn+1][izn+1][3], -QVr[ixn+1][iyn+1][izn+1][1]>      // "root" of elementary cell
+                            }
+                      }
+                      threshold _trsh
+                      accuracy _Accur 
+                      all_intersections
+                      max_gradient _MaxG ///1.1  
+                      evaluate _MaxG*.7, sqrt(1/.7), .7  //.1, 1.4, .7
+                      open               
+                      // texture{_IsoTexture}
+                      texture{
+                         pigment{ // function{_ident(x,y,z,_grd)} - identity function
+                            function{ clip(log(_grd(x,y,z ) -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
+                            color_map{_RGBMap}
+                         }
+                         finish{ scDullMirror }
+                      }
+                    }      
+                    #local _CellsFound = _CellsFound+1;
+                #end
+            #end 
+        #end 
+        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
+    #end
+#end // ## GrdSrf
              
 // private macros 
 #macro _fmx() (  -pow((xx-rx)/_d,3) +2 *pow((xx-rx)/_d, 2) - (xx-rx)/_d) #end // Q_m_    
