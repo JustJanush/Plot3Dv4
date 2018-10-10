@@ -908,10 +908,10 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
 #end
 
 
-   //======================================================//
-  //    Drawing facility gradient implementaion per cell, //
- //    simplified formulation                            //
-//======================================================//
+   //=======================================================//
+  //    Drawing facility gradient implementation per cell, //
+ //    simplified formulation                             //
+//=======================================================//
 #macro DrawInterpolGrdSrf1(_trsh, _dd) // _trsh - isosurface threshold
 #debug concat("=>dd= ",str(_dd,6,4),"==\n")   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
@@ -933,7 +933,7 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                                     QVr[  ixn][  iyn][izn+1][0], // Q1u
                                     QVr[  ixn][iyn+1][izn+1][0], // Q2u
                                     QVr[ixn+1][  iyn][izn+1][0], // Q3u
-                                    QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
+                                        QVr[ixn+1][iyn+1][izn+1][0]  // Q4u
                            ) 
                     | _trsh>max(
                                     QVr[  ixn][  iyn][izn][0],   // Q1d
@@ -1017,9 +1017,9 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
     #end
 #end
 
-  //=====================================================//
- //    Drawing facility gradient implementaion per cell //
-//=====================================================//
+  //======================================================//
+ //    Drawing facility gradient implementation per cell //
+//======================================================//
 #macro DrawInterpolGrdSrf(_trsh, _dd) // _trsh - isosurface threshold
 #debug concat("=>dd= ",str(_dd,6,4),"==\n")   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
@@ -1125,6 +1125,168 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
         #debug concat(str(_CellsFound,10,0), " found to date.\n")    
     #end
 #end // ## GrdSrf
+
+
+// /*   
+   //====================================//
+  //  key interpolation function        //
+ //  internal POVRay coordinates!!!    // 
+//====================================//
+#declare VGrid = function(
+                        tx, ty, tz,              // tau xP=x/ddd, tau yP=y/ddd, tau zP=z/ddd
+                        _Q000, _Q100, _Q110, _Q010,  // loads  //Q(ijk) refers to internal POVRay
+                        _Q001, _Q101, _Q111, _Q011  // loads 
+                 ){ 
+// version on translated unary box
+  ( // POVRay coordinates
+     _Q000*(1-tx)*(1-ty)*( -tz)+
+     _Q100*   tx *(1-ty)*( -tz)+
+     _Q010*(1-tx)*   ty *( -tz)+
+     _Q001*(1-tx)*(1-ty)*(1+tz)+
+     _Q110*   tx *   ty *( -tz)+
+     _Q101*   tx *(1-ty)*(1+tz)+
+     _Q011*(1-tx)*   ty *(1+tz)+
+     _Q111*   tx *   ty *(1+tz)
+  )
+} 
+
+#declare VGridGrad = function(
+                        tx, ty, tz,              // tau xP=x/ddd, tau yP=y/ddd, tau zP=z/ddd
+                        _Q000, _Q100, _Q110, _Q010,  // loads //Q(ijk) refers to internal POVRay
+                        _Q001, _Q101, _Q111, _Q011,  // loads 
+                        _ddd){ 
+// new version
+  sqrt(
+      pow(
+           (_Q100-_Q000)*(1-ty)*( -tz)+
+           (_Q110-_Q010)*   ty *( -tz)+
+           (_Q101-_Q001)*(1-ty)*(1+tz)+
+           (_Q111-_Q011)*   ty *(1+tz)
+      ,2)+
+      pow(
+           (_Q010-_Q000)*(1-tx)*( -tz)+
+           (_Q110-_Q100)*   tx *( -tz)+
+           (_Q111-_Q101)*(1-tx)*(1+tz)+
+           (_Q011-_Q001)*   tx *(1+tz)
+      ,2)+ 
+      pow(
+           (_Q001-_Q000)*(1-tx)*(1-ty)+
+           (_Q101-_Q100)*(  tx)*(1-ty)+
+           (_Q111-_Q110)*(  tx)*(  ty)+
+           (_Q011-_Q010)*(1-tx)*(  ty)
+      ,2)  // '1' for testing
+  )/_ddd
+
+} 
+
+
+
+  //======================================================//
+ //    Drawing facility gradient implementation per cell //
+//======================================================//
+#macro DrawInterpolGrdSrf2(_trsh, _dd) // _trsh - isosurface threshold
+#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+#declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
+
+    #declare _dd3 = pow(_dd,3);
+    #local _CellsFound = 0;
+    #for(izn,0,dimension_size(QVr,3)-2)
+        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        #for(iyn,0,dimension_size(QVr,2)-2)
+            #for(ixn,0,dimension_size(QVr,1)-2)                               
+                // do not analyze "empty" cells
+                #if (_trsh<min(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                           ) 
+                    | _trsh>max(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                            )      
+                     |  (QVr[ixn][iyn][izn][4])     
+                    ) // do nothing
+
+                #else        
+                    isosurface{
+                      function{VGrid( x, y, z,    // internal conversion from real to internal representation
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                                    ) 
+                      }               
+                      contained_by{ 
+                            box{
+                                 <0, 0, -1>,     // "root" of elementary cell >,
+                                 <1, 1,  0>      // "root" of elementary cell
+                            }
+                      }
+                      threshold _trsh
+                      accuracy _Accur 
+                      all_intersections
+                      max_gradient _MaxG ///1.1  
+                      evaluate _MaxG*.7, sqrt(1/.7), .7  //.1, 1.4, .7
+                      open               
+                      // texture{_IsoTexture}
+                      texture{
+                         pigment{ // 
+                            function{ clip(log(
+                                 VGridGrad(x,y,z, 
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0],
+                                   _dd 
+                                 ) -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
+                            color_map{_RGBMap}
+                         }
+                         finish{ scDullMirror }
+                      }                                                                               
+                      scale _dd
+                      translate <QVr[ixn  ][iyn][izn][2], QVr[ixn  ][iyn][izn][3], -QVr[ixn  ][iyn][izn][1]>      // "root" of elementary cell
+                    }      
+                    #local _CellsFound = _CellsFound+1;
+                #end
+            #end 
+        #end 
+        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
+    #end
+#end // ## ...GrdSrf2
+
+
+
              
 // private macros 
 #macro _fmx() (  -pow((xx-rx)/_d,3) +2 *pow((xx-rx)/_d, 2) - (xx-rx)/_d) #end // Q_m_    
