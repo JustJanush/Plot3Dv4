@@ -48,7 +48,7 @@
    // R,  R_VdWalls, LJ eps,  Hue,  Sat,   Lumia -- all these values may be overridden on demand of course
    //                                               TODO: if Hue<0 it refers to the "materials" table
     {   9,  1.00,     1.000,    0,  0.0,   0.0} // number of elements in the table ;)
-   ,{0.31,  1.20,     1.000,    0,  0.0,   0.6} //  1  H - hydrogen 
+   ,{0.31,  1.20,     1.000,    0,  0.0,   0.8} //  1  H - hydrogen 
    ,{0.28,  1.40,     1.000,    0,  1.0,   0.5} //  2 He - helium
    ,{1.28,  1.82,     1.000,    0,  1.0,   0.5} //  3 Li - lithium
    ,{0.96,  1.53,     1.000,    0,  1.0,   0.5} //  4 Be - berilium
