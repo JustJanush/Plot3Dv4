@@ -27,16 +27,17 @@
 * HISTORY
 *  2017-02-03, 3.1.0.5  - "PlusMinus" bars added
 *  2017-10-15, 3.1.0.11 - HollowBar() corrections
+*  2018-10-28, SetEmission#() macros added
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef  (BarShapes_INC)
-#declare BarShapes_INC="2017-10-15";
+#declare BarShapes_INC="2019-05-16";
 #version 3.7;
 /***************************/
 #declare _FileName   = "BarShapes.inc";
-#declare _FileVerMaj = "3.1.0.11";
+#declare _FileVerMaj = "3.1.0.13";
 #declare _FileVerMin = BarShapes_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
@@ -51,6 +52,16 @@
 #declare StandardBar = box{<-.5,0,.5>, <.5, 1, -.5>};
 #declare CylinderBar = cylinder{0,<0,1,0>, .5};
 
+#declare _Emission1 = .5;
+#declare _Emission2 = .5;
+
+#macro SetEmission1(_em)
+    #declare _Emission1 = _em;
+#end
+
+#macro SetEmission2(_em)
+    #declare _Emission2 = _em;
+#end
 
 #macro McrCylinderBar(ecc, deg) // ecc-entricity, deg-rotation in [deg]
    #declare obj = 
@@ -238,7 +249,7 @@ difference{
     #else
       material{ texture { pigment{color tmpColour1 }
 //                           normal { bumps 0.5 scale 0.05}
-                          finish { diffuse 0.0 phong .4 ambient .8 }
+                          finish { diffuse 0.0 phong .4 emission _Emission1 }
                 } // end of texture
                 interior { tmpInterior }
       } // end of material -------------------
@@ -250,7 +261,7 @@ difference{
     #else
       material{ texture { pigment{color tmpColour2 }
 //                              normal { bumps 0.1 scale 0.02}
-                          finish { diffuse .0 phong .4 }
+                          finish { diffuse .0 phong .4 emission _Emission2}
                 } // end of texture
       } // end of material -------------------
     #end;
@@ -299,7 +310,7 @@ difference{
          <0, 0, 0>, <0, YYY, 0>, 0.5
           material{ texture { pigment{color tmpColour1 }
    //                           normal { bumps 0.5 scale 0.05}
-                              finish { diffuse .0 phong .4 ambient .5 }
+                              finish { diffuse .0 phong .4 emission _Emission1 }
                     } // end of texture
                     interior { tmpInterior }
 
@@ -310,7 +321,7 @@ difference{
          <0, WT, 0>, <0, YYY-WT, 0>, 0.5-WT
           material{ texture { pigment{color tmpColour2 }
 //                              normal { bumps 0.3 scale 0.05}
-                              finish { diffuse 0.0 phong .4
+                              finish { diffuse 0.0 phong .4 emission _Emission2
                                     specular 0.6
                                     roughness 0.005
                                     reflection {
@@ -357,7 +368,7 @@ difference{
          <0, Tiny, 0>, <0, YYY, 0>, 0.5
           material{ texture { pigment{color tmpColour1 }
    //                           normal { bumps 0.5 scale 0.05}
-                              finish { diffuse 0.0 phong .4 ambient .8
+                              finish { diffuse 0.0 phong .4 emission _Emission1
                                     specular 0.6
                                     roughness 0.005
                                     reflection {
@@ -377,7 +388,7 @@ difference{
          <0, WT, 0>, <0, YYY+Tiny, 0>, 0.5-WT
           material{ texture { pigment{color tmpColour2 }
 //                              normal { bumps 0.1 scale 0.02}
-                              finish { diffuse .0 phong .4 }
+                              finish { diffuse .0 phong .4 emission _Emission2 }
                     } // end of texture
           } // end of material -------------------
       }
@@ -572,7 +583,7 @@ difference{
                         }
                     #else
                         color rgb 0.5
-                        #debug concat("\nImage specified not found",_Img,"\n")
+                        #debug concat("\nImage specified not found:\"",_Img,"\"\n")
                     #end
                 }
              }
@@ -589,9 +600,10 @@ difference{
       material{ texture{tmpTexture}};
     #else
       material{ texture { pigment{color rgbft tmpColour1 }
-//                           normal { bumps 0.5 scale 0.05}
-                       finish { scDullMirror diffuse .30 phong .4 emission .3 }
-                } // end of texture
+                           normal { bumps 0.5 scale 0.05}
+//                       finish { scDullMirror diffuse .30 phong .4 emission .3 }
+                       finish { Dull diffuse .30 phong .4 emission .3 }
+                  } // end of texture
                 interior { tmpInterior }
       }; // end of material -------------------
     #end

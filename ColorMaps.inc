@@ -24,11 +24,11 @@
 ****/
 
 #ifndef(ColorMaps_INC)
-#declare ColorMaps_INC="2018-09-17"; // last modification date
+#declare ColorMaps_INC="2019-05-10"; // last modification date
 // common includes & definitions
 #version 3.7;
 #declare _FileName   = "ColorMaps.INC";
-#declare _FileVerMaj = "4.0.0";
+#declare _FileVerMaj = "4.0.1";
 #declare _FileVerMin = ColorMaps_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")

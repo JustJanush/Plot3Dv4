@@ -9,7 +9,7 @@
 *
 *    |html <hr width=50% align="left">
 * VERSION
-*  4.0.2, tested on PovRay 3.7.
+*  4.0.3, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -28,6 +28,7 @@
 *  2018-07-05/4.0.0 - cleanup for Prometheus deployment
 *  2018-02-18/4.0.1 - corections in documentation
 *  2019-02-20/4.0.2 - texture handling for atoms and bonds
+*  2019-03-19/4.0.3 - minor corrections in doc
 ****
   end of RoboDoc comment
 ****/
@@ -66,7 +67,9 @@
 #declare MaxN      = 10;
 #declare MaxB      = 13;
 #declare PTube_Atms = array[MaxN+1][8]  // charge, x,y,z, R, R_m, epsilon, multifunction see below
-//                             [..][7] color component: [..][0]>0 Red; <0 Blue; (0;1)-hue component of HSL color; >=1-element number in Mendelejew table, may encode radius as well, 1-H, 2=He, ....
+//                             [..][7] color component: if [..][0]>0 Red; if <0 Blue; 
+//                                     [0;1) - hue component of HSL color; 
+//                                     >=1   - element number in Mendelejew table, may encode radius as well, 1=H, 2=He, ....
                  { // POVRay coordinates
                    //          1/0    2/1   3/2   4/3    5/4   6/5    7/6    8/7
                            { MaxN,       0, 0,       0,    0,    0,        0, 0}, // MaxN=[0][0] - number of molecules in the table:[1..MaxN]

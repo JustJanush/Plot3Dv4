@@ -15,7 +15,7 @@
 *     **   License: GNU GPL                                  **
 *     **   Homepage:    http://scpovplot3d.sourceforge.net   **
 *     *********************************************************
-*     **   version: 3.0.8 (& have a nice time ;)             **
+*     **   version: 3.1.0.9 (& have a nice time ;)             **
 *     *********************************************************
 * AUTHOR
 *  Janusz Opi³a Ph.D.
@@ -31,16 +31,17 @@
 * HISTORY
 *  2017-02-02, 3.1.0.7 - X-axis description impvnts
 *  2018-08-30, 3.1.0.8 - Vertical axis description bug fixed
+*  2019-02-27, 3.1.0.9 - reuse of DscrColAxe table enabled, DrawColDscr adjusted
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef  (Histogram_INC)
-#declare Histogram_INC="2018-08-30";
+#declare Histogram_INC="2019-02-27";
 #version 3.7;
 
 #local _FileName   = "Histogram.inc";
-#local _FileVerMaj = "3.1.0.8";
+#local _FileVerMaj = "3.1.0.9";
 #local _FileVerMin = Histogram_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -333,6 +334,7 @@
 #end
 
 #macro InitDscrColAxe()
+  #ifndef (DscrColAxe)
     #if (MaxCol>0)
         #declare DscrColAxe = array[MaxCol];       // description along X-axis (ie column axe)
         #for(i, 0, MaxCol-1)
@@ -340,8 +342,8 @@
         #end
     #else
         #debug "Can\'t init Col-axis description array - add some bars first\n"
-    
-    #end    
+    #end             
+  #end  
 #end                 
 
 /**************************************/
@@ -386,7 +388,8 @@
      }
      #declare xPos=xPos+Xside+deltaX;
      #declare Cnt=Cnt+1;
-  #end
+  #end                
+  #undef ColCnt  
 #end
 /**************************************/
 #macro InitDscrRowAxe()

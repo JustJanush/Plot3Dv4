@@ -31,11 +31,11 @@
 ****/
 
 #ifndef(BPatchSurf_INC)
-#declare BPatchSurf_INC = "2018-04-07";
+#declare BPatchSurf_INC = "2019-05-11";
 #version 3.7;
 
 #declare _FileName   = "BPatchSurf.inc";
-#declare _FileVerMaj = "3.3.0.0";
+#declare _FileVerMaj = "4.0.0.1";
 #declare _FileVerMin = BPatchSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -264,7 +264,7 @@ DrawAllPatches()
 *  i, j - two float numbers for x,y argument values respectively, note that 'x' and 'y' symbols are predefined in POVRay as coord's system vectors
 * EXAMPLE
 #declare Newton  = function (d) { 1/d      }      // named after potential function
-RawDataSurface("AnyFiled.dat", Newton, Llimiter, .5, 0, 10, 20, 0, 10, 20)
+RawDataSurface("AnyFile.dat", Newton, Llimiter, .5, 0, 10, 20, 0, 10, 20)
 DrawAllPatches()
 * SEE ALSO
 *  one should also refer to:
@@ -272,7 +272,7 @@ DrawAllPatches()
 *   DrawAllPatchesWithTexture(), DrawAllPatchesWithMap(), POVRay function pointers
 * SOURCE
 */ 
-#declare Newton   = function (d) { 1/d     } // USELESS named after newtonian potential function
+#declare Newton   = function (d) { 1/d     }         // USELESS named after newtonian potential function
 #declare Limiter  = function (d) { 1/DZero }        // this function is called when d<DZero
 
 #declare Newton2  = function (d) { 1/pow(d,2)      } // named after newtonian potential function
@@ -512,9 +512,9 @@ union{
 *  Its simplicity results from sophisticated data structure.
 *  This macro applies UV'ed texture to the surface given in _UV_png (PNG format) file.
 * SYNOPSIS
-DrawPatch_UVpng(ipy, ipx, _UV_png)
+DrawAllPatches_UVpng(_png_file )
 * INPUTS
-*  None
+*  string_fn _UV_png - filename of (square) PNG raster bitmap
 * SEE ALSO
 *  one should also refer to:
 *   FunctionSurface(), EvalPatchedSurface(), DrawPatch(), DrawPatch_UVpng(),
@@ -1295,7 +1295,50 @@ DrawAllPatches()                    // and then render it
        #declare EstNodes[rix][2]=RNodes[rix].z; // mesured value of Z
        #declare EstNodes[rix][3]=_zEst; // computed, estimated value Z
        #local rix=rix+1;
-   #end
+   #end                     
+   _de
+#end
+
+//2019-05-11: compute smoothed value at raw point "_indx", excluding!
+#macro RawDataExPoint(_indx, Smooth, Singular, sigma)
+         #local wghtSum = 0.0;
+         #local wght = 0.00;
+         #local ypov = 0.0;
+         #local _rix  = 0;
+         #local _P = RNodes[_indx];
+         #while(_rix < NumPts) // take into account all points from input file
+         // #debug concat(str(_rix, 10,0),"Pomidor\n")
+           #if ( _rix != _indx )
+             #local d  = sqrt(pow(_P.x-RNodes[_rix].x,2)+pow(_P.y-RNodes[_rix].y,2))/sigma; // distance between approximated and reference points ///corrected
+             #local wght = (d>DZero?Smooth(d):Singular(d));
+             #local wghtSum = wghtSum+wght;
+             #local ypov = ypov+RNodes[_rix].z*wght;
+           #else
+           #end 
+           #local _rix=_rix+1;
+         #end
+         #declare wghtSum = (wghtSum>0?wghtSum:DZero);   // just for stability
+         #local ypov = ypov/wghtSum; // started 2019-05-11  // 
+         ypov
+#end
+
+#macro ComputeResiduals(Smooth, Singular, sigma) // radius of spheres
+#debug "Computing MSE... \n"         
+   #declare EstNodes = array[NumPts][4]; // vector of estimated values [][x,y,z,est]
+   #local _rixCR = 0;      
+   #declare _de = 0;
+   #while(_rixCR<NumPts)
+       #if (mod((NumPts-_rixCR), 100) = 0 )
+         #debug concat(str(NumPts-_rixCR,10,0), " residuals to compute.\n")
+       #end
+       #declare _zEst = RawDataExPoint(_rixCR, Smooth, Singular, sigma); 
+       #declare _de=_de+pow(RNodes[_rixCR].z-_zEst, 2);
+       #declare EstNodes[_rixCR][0]=RNodes[_rixCR].x; // real values
+       #declare EstNodes[_rixCR][1]=RNodes[_rixCR].y; // real values
+       #declare EstNodes[_rixCR][2]=RNodes[_rixCR].z; // mesured value of Z
+       #declare EstNodes[_rixCR][3]=_zEst; // computed, estimated value Z
+       #local _rixCR = _rixCR+1;
+   #end                     
    _de
 #end
 
@@ -1823,7 +1866,7 @@ union {
 }
 #end
 
-#macro DrawRNodes(RR) // radius of spheres
+#macro DrawRNodes(RR) // radius of spheres, default texture
 #debug "doing DrawRNodes(RR).... \n"
    #local rix=0;
    #while(rix<NumPts)
@@ -1846,8 +1889,12 @@ union {
        sphere {
          <RNodes[rix].y, RNodes[rix].z, -RNodes[rix].x>, RR /// correction !!
 /// org: <RNodes[rix].x, VScale*RNodes[rix].z, -RNodes[rix].y>, RR /// correction !!
-         texture{ pigment {color VioletRed }}
-         #debug "done.... \n"
+         texture{ tmpTexture } // use first CommonDefs.SetTexture( FullTexture ) 
+         #ifdef (Debug)
+           #if (Debug>0)
+            #debug "done.... \n"
+           #end 
+         #end  
        }
        #local rix=rix+1;
    #end
