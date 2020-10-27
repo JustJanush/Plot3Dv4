@@ -516,7 +516,6 @@ difference{
    }
    object{obj}
 #end
-
 // YYY-value, ecc-entricity, deg-rotation in [deg], walls width, photo name, y/x image ratio, text (short!!), text texture
 // handles setTexture, SetRGBFTColor_1, SetRGBFTColor_2, 
 #macro PhotoBar(YYY, ecc, deg, D, _Img, _yxratio, _Txt,_txt_txtr) 
@@ -600,7 +599,7 @@ difference{
       material{ texture{tmpTexture}};
     #else
       material{ texture { pigment{color rgbft tmpColour1 }
-                           normal { bumps 0.5 scale 0.05}
+//                       normal { bumps 0.5 scale 0.05}
 //                       finish { scDullMirror diffuse .30 phong .4 emission .3 }
                        finish { Dull diffuse .30 phong .4 emission .3 }
                   } // end of texture
@@ -695,11 +694,190 @@ difference{
        scale < .3*Xside/maxtxt.x, .3*Xside, LettrDepth>
        translate <Xside/10, 0.1, -Zside/2-.1>
     }
-
-
     object{obj}
     }
-#end
+#end // PhotoBar
+
+// YYY-value, ecc-entricity, deg-rotation in [deg], walls width, photo name, y/x image ratio, text (short!!), text texture
+// handles setTexture, SetRGBFTColor_1, SetRGBFTColor_2, 
+#macro PhotoBarUp(YYY, ecc, deg, D, _Img, _yxratio, _Txt,_txt_txtr) 
+   #declare YYY=YScaleFactor*YYY;
+
+  #if (YYY > MaxY)
+    #declare MaxY=YYY;
+    #declare DscMaxY=MaxY/YScaleFactor;
+  #end
+  #declare obj = merge {
+  #local _YSL = 1.15*YScaleFactor*sqrt(Xside*Zside);                  
+//  light_source { <  0, _YSL+YYY ,        0> color rgb .6}
+//  light_source { <  0, _YSL+YYY ,        0> color rgb .6 looks_like{sphere{ 0 .5 texture{pigment{color rgbt<0,0,1,.5>} finish{emission 1}}}}} // natural light source, white  // prev: < -Xside/3, 20,  Zside/2>
+    
+//  light_source { <  0, 0.3*YYY, -3*Zside> color rgb .1 shadowless}
+//  light_source { <  0, 0.3*YYY, -3*Zside> color rgb .1 looks_like{sphere{ 0 .5 texture{pigment{color rgbt<0,1,0,.5>} finish{emission 1}}}}} // natural light source, white  // prev: <  Xside/3, 10, -3*Zside>
+    
+    light_source { <  0, 0.5*_YSL, -5*Zside> color rgb .3 shadowless}
+//light_source { <  0, 0.5*_YSL, -5*Zside> looks_like{sphere{ 0 .5 texture{pigment{color rgbt<1,0,0,.5>} finish{emission 1}}}}} // natural light source, white  //  New - labels enlightement
+
+// now insert photo     
+      #if (strlen(_Img)>0) // picture given
+         polygon {
+           5,
+              <0, 0>, <0, 1>, <1, 1>, <1, 0>, <0, 0>
+           // experimental feature!!
+           texture {
+               pigment{color rgb .5}
+               finish{ emission .4}
+           }
+           #if ( __MattSet ) texture { __MattTexture } #end 
+           
+           texture {
+             finish { ImgFinish }
+             pigment {
+                     #if (file_exists(_Img))
+                       ImageType( _Img )
+                       #if (Debug)  
+                         #debug concat(endl, input_file_name, ": [ext=",__ImageType, "]",endl)  
+                       #end   
+                       image_map { // exr | gif | hdr | iff | jpeg | pgm | png | ppm | sys | tga | tiff
+                          #if (__ImageType="jpeg") jpeg #end     
+                          #if (__ImageType="tiff") tiff #end     
+                          #if (__ImageType= "png")  png #end     
+                          #if (__ImageType= "gif")  gif #end     
+                          #if (__ImageType= "iff")  iff #end     
+                          #if (__ImageType= "hdr")  hdr #end     
+                          #if (__ImageType= "exr")  exr #end     
+                          #if (__ImageType= "tga")  tga #end     
+                          #if (__ImageType= "pgm")  pgm #end     
+                          #if (__ImageType= "ppm")  ppm #end     
+                          #if (__ImageType= "sys")  sys #end     
+                          _Img    // actual file name
+                          gamma #if (ImgGamma>0) ImgGamma #else srgb #end 
+                          #if (!TilXYimage) once #end
+                          #switch (ImgInter)
+                             #case (2) interpolate 2 #break // bilinear
+                             #case (3) interpolate 3 #break // bicubic
+                             #case (4) interpolate 4 #break // normalized
+                             #else #debug "image_map: no interpolation until enter 2, 3 or 4" #break
+                          #end
+                          #if ( __ImgFilterSet   ) filter     all __ImgFilterPower    #end            
+                          #if ( __ImgTransmitSet ) transmit   all __ImgTransmitPower  #end            
+                        }
+                    #else
+                        color rgb 0.5
+                        #debug concat("\nImage specified not found:\"",_Img,"\"\n")
+                    #end
+                }
+             }
+             scale <Xside, _yxratio*Xside, 1>
+             translate < -Xside/2, YYY+Tiny, (1-Tiny)*Zside/2 >
+           }
+      #end
+// end insert photo                 
+
+//==================================
+  #local tmpmat1 = 
+    #if (DeclareLevel = 2)
+      material{ texture{tmpTexture}};
+    #else
+      material{ texture { pigment{color rgbft tmpColour1 }
+//                       normal { bumps 0.5 scale 0.05}
+//                       finish { scDullMirror diffuse .30 phong .4 emission .3 }
+                       finish { Dull diffuse .30 phong .4 emission .3 }
+                  } // end of texture
+                interior { tmpInterior }
+      }; // end of material -------------------
+    #end
+
+  #local tmpmat2 = 
+    #if (DeclareLevel = 2)
+      material{ texture{tmpTexture}};
+    #else
+      material{ texture { pigment{color rgbft tmpColour2 }
+//                              normal { bumps 0.3 scale 0.05}
+                          finish { diffuse 0.0 phong .4
+                                emission .4
+                                specular 0.6
+                                roughness 0.005
+                                reflection {
+                                  0.1, 1.0
+                                  fresnel on
+                                }
+                                conserve_energy
+                          }
+                } // end of texture
+      }; // end of material -------------------
+    #end
+//==================================
+
+   #if (D>0)
+   difference{
+      box{
+         <-Xside/2, 0, Zside/2>, <Xside/2, YYY, -Zside/2>
+         material{tmpmat1}
+      }
+      #declare WT=D*(Xside+Zside)/2;
+      box{
+         <-Xside/2+WT, WT, Zside/2-WT>, <Xside/2-WT, YYY-WT, -Zside/2+WT> material{tmpmat2}
+      }
+   } 
+
+   #elseif (D<0)
+       #declare D=abs(D);
+       difference{
+          box{
+             <-Xside/2, 0, Zside/2>, <Xside/2, YYY, -Zside/2>
+             material{tmpmat1}          
+          }
+          #declare WT=D*(Xside+Zside)/2;
+          box{
+             <-Xside/2+WT, WT, Zside/2-WT>, <Xside/2-WT, 2*YYY-WT, -Zside/2+WT>
+             material{tmpmat2}
+          }
+       } 
+     #else // ... D<=0 full bar
+      box{
+         <-Xside/2, 0, Zside/2>, <Xside/2, YYY, -Zside/2> material{tmpmat1}
+      }
+     
+    #end // ...if D>0
+    
+    #if (Photons)
+        photons {  // photons block
+           target 1
+           refraction on
+           reflection on
+           collect on
+        }
+    #end
+    #if (ecc<1.0)
+       scale <1, 1, ecc>
+    #else
+       scale <1/ecc, 1, 1>
+    #end
+    rotate y*deg
+     
+
+// insert description (keep it short!!)
+    #declare txtobj = object{
+       Text(_Txt)
+       texture{_txt_txtr}
+    };   
+    #declare maxtxt=max_extent(txtobj);
+//    #debug concat("maxtxt= ",str((Xside/2-maxtxt.x)/2,5,3), "\n" )   
+
+    
+// end description object is ready!
+
+}; 
+    union{
+    object{
+       txtobj
+       scale < .3*Xside/maxtxt.x, .3*Xside, LettrDepth>
+       translate <Xside/10, 0.1, -Zside/2-.1>
+    }
+    object{obj}
+    }
+#end // PhotoBar
 
 // YYY-value, ecc-entricity, deg-rotation in [deg], walls width, square photo name, text (short!!), text texture
 // _Gadget is assumed as 1x1x# box, aligned with Xp/Yp plane (vertical!).

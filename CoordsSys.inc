@@ -930,13 +930,15 @@ union{  // XZ plate = base plate
              #break
         #end
       } // end of texture
-     #if (Photons)
-        photons {  // photons block
-           target 1
-           refraction on
-           reflection on
-           collect on
-        }
+     #ifdef(Photons) 
+         #if (Photons)
+            photons {  // photons block
+               target 1
+               refraction on
+               reflection on
+               collect on
+            }
+         #end
      #end
 }
 #end

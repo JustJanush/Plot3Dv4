@@ -4,7 +4,7 @@
 *   There still is a lot TODO....
 *    |html <hr width=50% align="left">
 * VERSION
-*  3.1.0.#, tested on PovRay 3.7.
+*  4.0.2, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a‚a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -24,11 +24,11 @@
 ****/
 
 #ifndef(ColorMaps_INC)
-#declare ColorMaps_INC="2019-05-10"; // last modification date
+#declare ColorMaps_INC="2020-05-22"; // last modification date
 // common includes & definitions
 #version 3.7;
 #declare _FileName   = "ColorMaps.INC";
-#declare _FileVerMaj = "4.0.1";
+#declare _FileVerMaj = "4.0.2";
 #declare _FileVerMin = ColorMaps_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
@@ -42,6 +42,11 @@
 #include "glass.inc"
 #include "metals.inc"
 
+// default, module level definitions
+#declare Filter=.0;
+#declare Warstwy=yes;
+#declare Effects=false;
+#declare LevCol=Black;
 
 #declare ReversedColorMap=color_map {
            [0.1 color Red]
@@ -60,21 +65,16 @@
       [1.0   color Magenta]
     };
 
-// default, module level definitions
-#declare Filter=.0;
-#declare Warstwy=yes;
-#declare Effects=false;
-#declare LevCol=Black;
-#macro SetWarstwyOn()
-  #declare Warstwy=yes;
-#end
-
 #macro SetWarstwyOff()
   #declare Warstwy=no;
 #end
 
 #macro SetWarstwyOn()
   #declare Warstwy=yes;
+#end
+
+#macro SetFilter(_F)
+  #declare Filter = _F;
 #end
 
 #declare BW_Map =
@@ -186,10 +186,10 @@
 
 #declare Cartographic_Colors2=  
 // internal data
-#declare Filter=.65;          
-#declare Warstwy=yes;     
-#declare Effects=false;
-#declare LevCol=Black;    
+// #declare Filter=.65;          
+// #declare Warstwy=yes;     
+// #declare Effects=false;
+// #declare LevCol=Black;    
   color_map	{
   	 [0.000 color NewMidnightBlue  filter Filter]
   	 [0.100 color Blue filter Filter]  
@@ -234,7 +234,7 @@
       translate<0,-0.025,0>
    }; // CartTexture
 
-/// #macro InsertColorMap( _ww, _LevCol)
+/// #macro InsertColorMap( _ww, _LevCol) 
 #macro InsertColorMap( _ww, _LevCol)
 #debug "Inserting Cartographic_Colors....\n"
   pigment{
