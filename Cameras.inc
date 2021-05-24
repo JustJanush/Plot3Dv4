@@ -4,7 +4,7 @@
 *   TODO: still a lot!
 *   |html <hr width=50% align="left">
 * VERSION
-*  4.0.0, tested on PovRay 3.7.
+*  4.0.5, 2021-05-19 - tested on PovRay 3.7.0
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -25,7 +25,9 @@
 *  2016-02-12, v3.2.0.5 
 *    - InsertKeyItem macro evolved into two: InsertBarKeyItem, InsertCylKeyItem. Minor improvements.
 *    - CameraTarget may be now re-setted.                     
-*  2016-02-02, v3.2.0.3 - added InsertKeyItem macro
+*  2016-02-02, v3.2.0.3 - added InsertKeyItem() macro
+*  2021-04-11, v4.0.4 - minor bug in 'range' control for 'CameraAngiel()'
+*  2021-05-19, v4.0.5 - simple default perspective cameras FCamera() and FTiltedCamera() added;
 ****
   end of RoboDoc comment
 ****/
@@ -251,7 +253,7 @@ CameraOn (float Dist)
          up y
          right image_width/image_height*x  
          #if (CameraAngleSet)
-            angle CameraAngle
+            angle clip(CameraAngle, .1, 179.9)
          #else
             angle clip(atan(angiel)*180/pi, 10, 170)
          #end
@@ -1001,6 +1003,72 @@ union{
      #end
 } //camera
 #end
+
+// This camera looks at once established point "_AAt" from location "_Loc"
+/****M* Cameras.inc/FCamera 
+* PURPOSE
+*  Gets position _Loc and target point _AAt
+*  tilts by _T degrees, zooms by _Zoom, in or out 
+* SYNOPSIS      
+*/
+#macro FCamera( _Loc  // camera location
+              , _AAt  // aim camera at this point
+              , _Zoom // Zoom xD
+              )
+/* 
+*  INPUTS
+*  _Loc  - camera location in povray coords
+*  _AAt  - aim camera at this 3D povray point (really!)       
+*  _Zoom - Just zoom: >1 - zoom in, <1 - zoom out, negative values aren't interpreted 
+* SEE ALSO
+*  none
+****/   
+ camera {         
+   #local _d = vnormalize(_AAt - _Loc);
+   location  _Loc 
+   right     x*image_width/image_height
+   look_at _AAt  
+   direction abs(_Zoom)*_d
+ }
+#end                 
+
+// This camera looks at once established point "_AAt" from location "_Loc"
+// added tilt (or bank) in degrees [-180;180] cyclic (to the left is 'minus')
+/****M* Cameras.inc/FTiltCamera 
+* PURPOSE
+*  Tilted camera.
+*  Gets position _Loc and target point _AAt
+*  tilts by _T degrees, zooms by _Zoom, in or out 
+* SYNOPSIS      
+*/
+#macro FTiltCamera( _Loc    // camera location
+                  , _AAt    // aim camera at this point
+                  , _Zoom   // Zoom xD
+                  , _T      // camera tilt (or bank) in degrees (to the left 'minus')
+                  )
+/* 
+*  INPUTS
+*  _Loc  - camera location in povray coords
+*  _AAt  - aim camera at this 3D povray point (really!)       
+*  _Zoom - Just zoom: >1 - zoom in, <1 - zoom out, negative values aren't interpreted 
+*  _T    - tilt or bank in degrees, minus left, positive right.
+* SEE ALSO
+*  none
+****/   
+ camera {         
+   #local _d = vnormalize(_AAt - _Loc);
+   location  _Loc 
+   right     x*image_width/image_height
+   #if (vlength(vcross(y,_d))>0)
+     #local _xrgh = vnormalize(vcross(y, _d));
+   #else #local _xrgh = x;
+   #end  
+   sky vaxis_rotate((vcross(_d, _xrgh)), _d, _T)
+    
+   look_at _AAt   
+   direction abs(_Zoom)*_d
+ }
+#end                 
          
 #end // Cameras_INC
 

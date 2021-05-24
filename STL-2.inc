@@ -7,6 +7,8 @@
 *     |html <hr width=50% align="left">
 *     image:./imgs/bk-UncertaintySTL-B.png
 *   Fig.[STL] 3D surface and 3D fuzzy texel modelled by mesh2 object
+* VERSION
+*  4.0.1, 2021-05-19 - tested on PovRay 3.7.0
 * AUTHOR
 *   Janusz Opi³a Ph.D.
 *   jmo@agh.edu.pl, janusz.opila@gmail.com
@@ -16,6 +18,8 @@
 * COPYRIGHT
 *   GNU GPL v.3 License
 *   (c) 2013-now by Janusz Opi³a Ph.D.
+* HISTORY
+*  2021-05-20, v4.0.1, comment added
 *
 ****
   end of RoboDoc comment
@@ -35,7 +39,7 @@
 /*************************************************************/
 
 #ifndef(STL_INC_2)
-#declare STL_INC_2 = "2014-05-25"; // last modification date
+#declare STL_INC_2 = "2021-05-20"; // last modification date
 // common includes & definitions
 #version 3.7;
 #declare _FileName   = "STL-2.INC";
@@ -311,7 +315,7 @@ union{
             #end
             #declare FacetCount=FacetCount+1;
        #end //    ... #if (strcmp(TxtStub1, "endsolid"))
-    #end
+    #end  // #while()
     #debug concat("All ", str(FacetCount,6,0), " facets successfuly read in ", str(FacetCount,6,0),"\n => now rendering. . . . ")
 
     #fclose DataFile
