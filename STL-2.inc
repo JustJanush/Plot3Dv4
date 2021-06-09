@@ -43,7 +43,7 @@
 // common includes & definitions
 #version 3.7;
 #declare _FileName   = "STL-2.INC";
-#declare _FileVerMaj = "0.1.0";
+#declare _FileVerMaj = "1.1.0";
 #declare _FileVerMin = STL_INC_2;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")

@@ -84,7 +84,7 @@
 // mt = material
 // colour postfixes
 // F = filtered, FT filtered & translucent
-#ifndef Tiny #declare Tiny=0.00001; #end
+#ifndef (Tiny) #declare Tiny=0.00001; #end
 #declare endl="\n";
 /*********************[  some textures  ]*******************************/
 /*********************[ pure flat color ]*******************************/
