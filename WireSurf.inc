@@ -30,11 +30,11 @@
 ****/
 
 #ifndef(WireSurf_INC)
-#declare WireSurf_INC = "2014-05-25";
+#declare WireSurf_INC = "2021-05-08";
 #version 3.7;
 
 #declare _FileName   = "WireSurf_INC";
-#declare _FileVerMaj = "3.1.0.1";
+#declare _FileVerMaj = "4.0.0.1";
 #declare _FileVerMin = WireSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -105,7 +105,7 @@ material {
 */
 #declare DeclareLevel = 0;
 #declare NodeRadiiCoeff=0.20;
-#declare WireRadiiCoeff=NodeRadiiCoeff/2;
+#declare WireRadiiCoeff=NodeRadiiCoeff/sqrt(2);
 
 #declare shiftXY    = -1.4;
 #declare LettrSize  =  0.8;
@@ -270,17 +270,17 @@ SetNodeRadiiCoeff(float Coeff)
 ****/
 #macro SetNodeRadiiCoeff(Coeff)
   #declare NodeRadiiCoeff=Coeff;
-  #declare WireRadiiCoeff=NodeRadiiCoeff/sqrt(2);
+//  #declare WireRadiiCoeff=NodeRadiiCoeff/sqrt(2);
 #end
 
-/****f* WireSurf.inc/SetWireRadiiCoeff(Coeff)
+/****f* WireSurf.inc/SetWireRadiiCoeff ( _Coeff )
 * PURPOSE
 *   declares radius coefficient for the wire only
 * SYNOPSIS
-SetWireRadiiCoeff(float Coeff)
+SetWireRadiiCoeff(float _Coeff)
 ****/
-#macro SetWireRadiiCoeff(Coeff)
-  #declare WireRadiiCoeff=Coeff;
+#macro SetWireRadiiCoeff(_Coeff)
+  #declare WireRadiiCoeff=_Coeff;
 #end
 
 /**************************************/
@@ -555,6 +555,7 @@ DrawWireFrameRC(string filename DataFileName)
               #declare CountX=0;
               #while(CountX<Nx)
                 #declare YYY=YScaleFactor*Nodes[CountY][CountX];
+/*
                 sphere {
                       <CountX*deltaX, YYY, -CountY*deltaY>, NodeRadii
 
@@ -588,6 +589,7 @@ DrawWireFrameRC(string filename DataFileName)
                   }
                   #end
                 }
+*/                
 
                 #if ((CountX+1<Nx) &(CountY<Ny))
                     #declare YYY2=YScaleFactor*Nodes[CountY][CountX+1];
@@ -732,6 +734,7 @@ DrawWireFrameXY(string filename DataFileName)
               #declare CountX=0;
               #while(CountX<Nx)
                  #declare YYY=YScaleFactor*Nodes[CountY][CountX];
+/*
                  sphere {
                       <CountY*deltaY, YYY, -CountX*deltaX>, NodeRadii
                       material {
@@ -764,7 +767,7 @@ DrawWireFrameXY(string filename DataFileName)
                   }
                   #end
                 }
-
+*/
                 #if ((CountX+1<Nx) &(CountY<Ny))
                       #declare YYY2=YScaleFactor*Nodes[CountY][CountX+1];
                       merge{
@@ -1000,7 +1003,7 @@ ImportDataXY(string filename DataFileName)
 DrawNodePoints(float _scl)
 * INPUTS
 *  _scl - scaling factor along vertical axis, not perpendicularly to the surface!
-*  this is intended for representation of uncertainty of the data (SD? SEM?)
+*  this is intended for representation of uncertainty of all the data (SD? SEM?)
 ****/
 #macro DrawNodePoints(_scl) //= pure geometry ! use object{....  texture } construct
     #for (iy, 0,Ny-1)
@@ -1028,7 +1031,7 @@ DrawLinearWires(float _wireR, boolean _Sphrs)
 *  DrawBSplineWires()
 ****/
 #macro DrawLinearWires(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR;
+    #local WireRadiiCoeff=_wireR*QSurfSide;
     //======O-X-> X_r axis (real)
     #for (iy, 0, Ny-1)
         sphere_sweep{//
@@ -1049,7 +1052,7 @@ DrawLinearWires(float _wireR, boolean _Sphrs)
         }
     #end
     #if (_Sphrs)
-        #local NodeRadiiCoeff = _wireR*sqrt(2);
+//        #local NodeRadiiCoeff = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 
@@ -1072,7 +1075,7 @@ DrawCubicWires(float _wireR, boolean _Sphrs)
 *  DrawBSplineWires()
 ****/
 #macro DrawCubicWires(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR;
+    #local WireRadiiCoeff=_wireR*QSurfSide;
     //======O-X-> X_r axis (real)
     #for (iy, 0, Ny-1)
         #declare Start = 2*QNodes[iy][0] - QNodes[iy][1];
@@ -1116,7 +1119,7 @@ DrawCubicWires(float _wireR, boolean _Sphrs)
         }
     #end
     #if (_Sphrs)
-        #local NodeRadiiCoeff = _wireR*sqrt(2);
+//        #local NodeRadiiCoeff = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 
@@ -1138,8 +1141,8 @@ DrawBSplineWires(float _wireR, boolean _Sphrs)
 *  DrawLinearWires()
 *  DrawCubicWires()
 ****/
-#macro DrawBSplineWires(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR;
+#macro DrawBSplineWiresOuted(_wireR, _Sphrs)
+    #local WireRadiiCoeff=_wireR*QSurfSide;
     //======O-X-> X_r axis (real)
     #for (iy, 0, Ny-1)
         #declare Start = 2*QNodes[iy][0] - QNodes[iy][1];
@@ -1183,10 +1186,120 @@ DrawBSplineWires(float _wireR, boolean _Sphrs)
         }
     #end
     #if (_Sphrs)
-        #local NodeRadiiCoeff = _wireR*sqrt(2);
+//        #local NodeRadiiCoeff = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 #end // #macro
+
+/****M* WireSurf.inc/DrawBSplineWires2B()
+* PURPOSE
+*  Draws surface representation in the form of grid of Bezier splines, full implementation
+* SYNOPSIS
+DrawBSplineWires2B(float _Stfns, float _wireR, boolean _Sphrs)
+* INPUTS                        
+*  _Stfns - float > 0 = "stifness" of the spline; the bigger the more spline resembles straight lines;
+*                     = length of control point handles = 1/_Stfns [p.u.]
+*  _wireR - float > 0 = radii of the wire [p.u.]
+*  _Sphrs - boolean   = draw spheres in place of nodes? yes/no
+* SEE ALSO
+*  ImportDataRC()
+*  ImportDataXY()
+*  DrawNodePoints()
+*  DrawLinearWires()
+*  DrawCubicWires()
+****/
+#macro DrawBSplineWires(_StfnsX, _StfnsY, _wireR, _Sphrs)
+    #local _WRadii = _wireR*QSurfSide;      
+    #local _NRadii = 1.5*_WRadii;                             
+    #if (_StfnsX > 1e-7) #local _LHandleX = 1/_StfnsX; #else #local _LHandleX = 1e7; #end
+    #if (_StfnsY > 1e-7) #local _LHandleY = 1/_StfnsY; #else #local _LHandleY = 1e7;  #end
+    //======O-X-> X_r axis (real) by cuts
+    #for (iy, 0, Ny-1)
+        #declare Start = QNodes[iy][   0] + _LHandleX*(QNodes[iy][   0] - QNodes[iy][   1])/vlength(QNodes[iy][   0] - QNodes[iy][   1]);
+        #declare End   = QNodes[iy][Nx-1] + _LHandleX*(QNodes[iy][Nx-1] - QNodes[iy][Nx-2])/vlength(QNodes[iy][Nx-1] - QNodes[iy][Nx-2]);
+
+        #ifdef(Debug)
+            #if(Debug!=0)
+              sphere{<1,YScaleFactor,1>*Start, 1.5*_NRadii texture{pigment{color rgb<.0, 1,   1>} finish{phong .7 reflection metallic}}}
+              sphere{<1,YScaleFactor,1>*End,   1.5*_NRadii texture{pigment{color rgb< 1,  1,  0>} finish{phong .7 reflection metallic}}}
+            #end
+        #end
+
+        sphere_sweep{//
+              b_spline 4*Nx-2
+              <1,YScaleFactor,1>*Start, _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][  0]), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][  0]+_LHandleX*(QNodes[iy][  1]-QNodes[iy][  0])/vlength(QNodes[iy][  1]-QNodes[iy][  0])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][  1]-_LHandleX*(QNodes[iy][  2]-QNodes[iy][  0])/vlength(QNodes[iy][  2]-QNodes[iy][  0])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][  1]), _WRadii
+
+             #for (ix,1,Nx-3)
+                 ,<1,YScaleFactor,1>*(QNodes[iy][  ix]), _WRadii
+                 ,<1,YScaleFactor,1>*(QNodes[iy][  ix]+_LHandleX*(QNodes[iy][ix+1]-QNodes[iy][ix-1])/vlength(QNodes[iy][ix+1]-QNodes[iy][ix-1])), _WRadii
+
+                 ,<1,YScaleFactor,1>*(QNodes[iy][ix+1]-_LHandleX*(QNodes[iy][ix+2]-QNodes[iy][ix])/vlength(QNodes[iy][ix+2]-QNodes[iy][ix])), _WRadii
+                 ,<1,YScaleFactor,1>*(QNodes[iy][ix+1]), _WRadii
+             #end
+
+             ,<1,YScaleFactor,1>*(QNodes[iy][Nx-2]), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][Nx-2]+_LHandleX*(QNodes[iy][Nx-1]-QNodes[iy][Nx-3])/vlength(QNodes[iy][Nx-1]-QNodes[iy][ix-3])), _WRadii
+
+             ,<1,YScaleFactor,1>*(QNodes[iy][Nx-1]-_LHandleX*(QNodes[iy][Nx-1]-QNodes[iy][Nx-2])/vlength(QNodes[iy][Nx-1]-QNodes[iy][Nx-2])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[iy][Nx-1]), _WRadii
+
+             ,<1,YScaleFactor,1>*End, _WRadii
+        } // sphere_sweep/X
+  #end
+
+//=============================
+// =====O-Y->  Y_r axis  (real)
+    #for (ix, 0, Nx-1)
+        #declare Start = QNodes[   0][ix] + _LHandleY*(QNodes[   0][ix] - QNodes[   1][ix])/vlength(QNodes[   0][ix] - QNodes[   1][ix]);
+        #declare End   = QNodes[Ny-1][ix] + _LHandleY*(QNodes[Ny-1][ix] - QNodes[Ny-2][ix])/vlength(QNodes[Ny-1][ix] - QNodes[Ny-2][ix]);
+
+         #ifdef(Debug)
+             #if(Debug!=0)
+               sphere{<1,YScaleFactor,1>*Start, 1.5*_NRadii texture{pigment{color rgb<.0, 1,   1>} finish{phong .7 reflection metallic}}}
+               sphere{<1,YScaleFactor,1>*End,   1.5*_NRadii texture{pigment{color rgb< 1,  1,  0>} finish{phong .7 reflection metallic}}}
+             #end
+         #end
+
+         sphere_sweep{//
+              b_spline 4*Ny-2
+              <1,YScaleFactor,1>*Start, _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[0][ix]), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[0][ix]+_LHandleY*(QNodes[1][ix]-QNodes[0][ix])/vlength(QNodes[1][ix]-QNodes[0][ix])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[1][ix]-_LHandleY*(QNodes[2][ix]-QNodes[0][ix])/vlength(QNodes[2][ix]-QNodes[0][ix])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[1][ix]), _WRadii
+
+             #for (iy,1,Ny-3)
+                 ,<1,YScaleFactor,1>*(QNodes[iy][  ix]), _WRadii
+                 ,<1,YScaleFactor,1>*(QNodes[iy][  ix]+_LHandleY*(QNodes[iy+1][ix]-QNodes[iy-1][ix])/vlength(QNodes[iy+1][ix]-QNodes[iy-1][ix])), _WRadii
+
+                 ,<1,YScaleFactor,1>*(QNodes[iy+1][ix]-_LHandleY*(QNodes[iy+2][ix]-QNodes[iy][ix])/vlength(QNodes[iy+2][ix]-QNodes[iy][ix])), _WRadii
+                 ,<1,YScaleFactor,1>*(QNodes[iy+1][ix]), _WRadii
+             #end
+
+             ,<1,YScaleFactor,1>*(QNodes[Ny-2][ix]), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[Ny-2][ix]+_LHandleY*(QNodes[Ny-1][ix]-QNodes[Ny-3][ix])/vlength(QNodes[Ny-1][ix]-QNodes[Ny-3][ix])), _WRadii
+
+             ,<1,YScaleFactor,1>*(QNodes[Ny-1][ix]-_LHandleY*(QNodes[Ny-1][ix]-QNodes[Ny-2][ix])/vlength(QNodes[Ny-1][ix]-QNodes[Ny-2][ix])), _WRadii
+             ,<1,YScaleFactor,1>*(QNodes[Ny-1][ix]), _WRadii
+
+             ,<1,YScaleFactor,1>*End, _WRadii
+         }// sphere_sweep/Y
+  #end
+
+
+
+
+    #if (_Sphrs)
+//        #local _NRadii = _wireR*sqrt(2);
+        union{ DrawNodePoints(1)}
+    #end
+#end // #macro
+
+
 
 //============
 #end // #endif

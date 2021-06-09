@@ -319,11 +319,13 @@ union {
           texture { pigment{ color rgb<0,1.5,0>} finish { phong 1 reflection{ 0.00 metallic 0.00} } } // end of texture
    }
 
+   #if(Zf > Tiny) // do not draw if too short...
    merge {
        cylinder {< .0, -Zf*L/3, 0>, <0, Zf*L, 0>, D/2 } // Z-real axis
        cone { <0, Zf*L, 0>, D*1.5,<0, Zf*L+4*D, 0>,0 }   // end of cone -------------------------------------
           texture { pigment{ color rgb<0, 0, 1.5>} finish { phong 1 reflection{ 0.00 metallic 0.00} } } // end of texture
-   }
+   }    
+   #end
 }
 #end
 
