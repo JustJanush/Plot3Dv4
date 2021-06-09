@@ -8,7 +8,7 @@
 *     **   License: GNU GPL                                  **
 *     **   Homepage:    http://scpovplot3d.sourceforge.net   **
 *     *********************************************************
-*     **   version: 3.1.0.4 (& have a nice time ;)           **
+*     **   version: 4.0.0.0 (& have a nice time ;)           **
 *     *********************************************************
 * AUTHOR
 *  Janusz Opi³a Ph.D.
@@ -20,42 +20,35 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.
 *  AGH University of Science and Technology
+* HISTORY                  
+*   2021-06-09 
+*      - minor improvements, cleaning, Changelog feat. dropped as not very useful;
+*   2017-10-04
+*      - txLCitronFT, txDCitronFT added;
+*   2017-04-21
+*      - txBlackFT introduced, 'emission' replaces obsolete 'ambient';
+*   2017-04-21
+*      - txDarkFT introduced, 'emission' replaces obsolete 'ambient';
+*   2017-01-31
+*    - formatting change 
+*   2015-12-11
+*    - extension: more image formats as wall background
+*   2014-10-29, v. 3.1.0.2:
+*    - added ChangeLog feature;
+*    - changed InsertCartesianArrows_LDs behavior;
+*  
 *
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef(CommonDefs_INC)
-#declare CommonDefs_INC="2017-10-04"; // last modification date
+#declare CommonDefs_INC="2021-06-09"; // last modification date
 // common includes & definitions
 #version 3.7;
 #local _FileName   = "CommonDefs.INC";
-#local _FileVerMaj = "3.1.0.7";
+#local _FileVerMaj = "4.0.0.1";
 #local _FileVerMin = CommonDefs_INC;
-
-#declare TLog =
-
-//  2017-10-04
-//    - txLCitronFT, txDCitronFT added
-//" 2017-04-21
-//    - txBlackFT introduced, 'emission' replaces obsolete 'ambient'
-//" 2017-04-21
-//    - txDarkFT introduced, 'emission' replaces obsolete 'ambient'
-
-  "2017-01-31
-    - formatting change 
-   2015-12-11
-    - extension: more image formats as wall background
-   2014-10-29, v. 3.1.0.2:\n
-    - added ChangeLog feature;\n
-    - changed InsertCartesianArrows_LDs behavior;\n
-";
-
-#ifdef (ChangeLog)
-  #declare ChangeLog = ChangeLog . TLog;
-#else
-  #declare ChangeLog = TLog;
-#end
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 // ============================================
@@ -68,17 +61,14 @@
 #include "strings.inc"
 #include "scFinish.inc"
 
+// Just 4 safety
+#ifndef (Debug) #declare Debug=0; #end
 
-#ifndef (Debug) // Just 4 safety
-   #declare Debug=0;
-#end
+// helper macro = A^2
+#macro SQR(A) (A)*(A) #end
 
-#macro SQR(A) // helper macro = A^2
-    (A)*(A)
-#end
-
-#declare __Service = -1; // service mode   USE: #if (Debug < __Service)...
-#declare __Stable  =  1; // usual messages USE: #if (Debug > __Stable)...
+#declare __Service = -1; // service levels: USE: #if (Debug < __Service)...
+#declare __Stable  =  1; // usual messages: USE: #if (Debug > __Stable)...
 #declare __RC      =  3; // RC stage
 #declare __Beta    =  5; // beta
 #declare __Alpha   =  7; // alpha mode
@@ -94,7 +84,7 @@
 // mt = material
 // colour postfixes
 // F = filtered, FT filtered & translucent
-#declare Tiny=0.00001;
+#ifndef Tiny #declare Tiny=0.00001; #end
 #declare endl="\n";
 /*********************[  some textures  ]*******************************/
 /*********************[ pure flat color ]*******************************/
@@ -321,9 +311,19 @@ material {
     #declare DeclareLevel = 2;
 #end
 
-#macro SetMaterial( FullMaterial )
-    #declare tmpMaterial = FullMaterial;
-    #declare DeclareLevel = 4;
+/****f* CommonDefs.inc/SetMaterial
+* PURPOSE
+*   Sets material{} & DeclareLevel at '4'
+* SYNOPSIS
+*/
+#macro SetMaterial( _FMat )
+/*
+* INPUTS
+*   materialdef _FMat - contains finish {} section for background images
+* SEE ALSO
+******/
+    #declare tmpMaterial  = _FMat;
+    #declare DeclareLevel =     4;
 #end
 
 /****f* CommonDefs.inc/SetImgFinish
