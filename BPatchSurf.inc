@@ -25,23 +25,24 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
+* HISTORY                            
+* 2021-06-10 - minor improvements in comments
 *
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef(BPatchSurf_INC)
-#declare BPatchSurf_INC = "2019-05-11";
+#declare BPatchSurf_INC = "2021-06-10";
 #version 3.7;
 
 #declare _FileName   = "BPatchSurf.inc";
-#declare _FileVerMaj = "4.0.0.1";
+#declare _FileVerMaj = "4.0.0.2";
 #declare _FileVerMin = BPatchSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
-#ifndef (Debug) // Just 4 safety
-   #declare Debug=0;
-#end
+// Just 4 safety
+#ifndef (Debug) #declare Debug=0; #end
 
 #include "ColorMaps.inc"
 

@@ -2,7 +2,7 @@
 * PURPOSE
 *   Macros for representation of 3D surfaces as wireframes
 * DESCRIPTION 
-*    image:./imgs/WireFramesS.png
+*    image:./imgs/WireFramesFour.jpg
 *
 *   Fig.[WireFrame] Linear (twice), Cubic and BSpline interpolation
 *   |html <hr width=50% align="left">
@@ -12,7 +12,7 @@
 * **   License: GNU GPL                                  **
 * **   Homepage:    http://scpovplot3d.sourceforge.net   **
 * *********************************************************
-* **   version: 3.0.6 (& have a nice time ;)             **
+* **   version: 4.0.0.2 (& have a nice time ;)             **
 * *********************************************************
 * AUTHOR
 *  Janusz Opi³a Ph.D.
@@ -24,17 +24,22 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
-*
+* HISTORY 
+* 2021-06-09/2 - correction of computing radius of the wires and nodes. Now looks identical in all styles.
+* 2021-06-09   - b_spline{} sphere_sweep curated, now works as it should
+*              b_spline is described in doc like cubic spline, in fact it is 
+*              Bezier with two extra eksternal points.                 
+* 
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef(WireSurf_INC)
-#declare WireSurf_INC = "2021-05-08";
+#declare WireSurf_INC = "2021-06-09";
 #version 3.7;
 
 #declare _FileName   = "WireSurf_INC";
-#declare _FileVerMaj = "4.0.0.1";
+#declare _FileVerMaj = "4.0.0.2";
 #declare _FileVerMin = WireSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -96,11 +101,12 @@ material {
 
 /****iv* WireSurf.inc/DeclareLevel
 * PURPOSE
-*   DeclareLevel determines what is defined:
+*   DeclareLevel variable determines what is defined:
 *   * 0 = just colour,
 *   * 2 = full texture item,
 *   * 4 = complete material definition.
-*   this value is valid until next "Set...()" declaration is met
+*   this value is valid until the next "Set...()" declaration is met
+*   few more default internal values
 * SOURCE 
 */
 #declare DeclareLevel = 0;
@@ -152,23 +158,30 @@ SetLettrBase(float ls)
 
 /****f* WireSurf.inc/SetDscrAngle()
 * PURPOSE
-*   Sets base angle of description of axes (category labels)
+*   Sets initial angle of description of axes (category labels)
 * SYNOPSIS
-SetDscrAngle(float)
+*/
+#macro SetDscrAngle(_ls)
+/*
+* INPUTS
+*   float _ls - contains finish {} section for background images
+* SEE ALSO
 ******/
-#macro SetDscrAngle(ls)
-    #declare DscrAngle=ls;
+    #declare DscrAngle = _ls;
 #end
 
 /****f* WireSurf.inc/SetBgPicture()
 * PURPOSE
 *   Sets picture for the background of coords system
 *   Will be moved to CoordsSys.inc
-* SYNOPSIS
-SetBgPicture(string filename Pct)
+* SYNOPSIS               
+*/
+#macro SetBgPicture(_Pct)
+/*
+* INPUTS
+*   string_fn Pct
 ******/
-#macro SetBgPicture(Pct)
-  #declare BgPicture=Pct;
+  #declare BgPicture = _Pct;
 #end // macro SetBgPicture()
 
 /****f* WireSurf.inc/TurnPhotonsDown(), TurnPhotonsUp()
@@ -268,8 +281,8 @@ SetMaterial( materialdef FullMaterial )
 * SYNOPSIS
 SetNodeRadiiCoeff(float Coeff)
 ****/
-#macro SetNodeRadiiCoeff(Coeff)
-  #declare NodeRadiiCoeff=Coeff;
+#macro SetNodeRadiiCoeff(_Coeff)
+  #declare NodeRadiiCoeff= (_Coeff>Tiny?_Coeff:Tiny);  // adjustment of node radii
 //  #declare WireRadiiCoeff=NodeRadiiCoeff/sqrt(2);
 #end
 
@@ -280,7 +293,8 @@ SetNodeRadiiCoeff(float Coeff)
 SetWireRadiiCoeff(float _Coeff)
 ****/
 #macro SetWireRadiiCoeff(_Coeff)
-  #declare WireRadiiCoeff=_Coeff;
+  #declare WireRadiiCoeff= (_Coeff>Tiny?_Coeff:Tiny);  // adjustment of bar radii
+
 #end
 
 /**************************************/
@@ -521,8 +535,6 @@ DrawWireFrameRC(string filename DataFileName)
         #while(CountY<Ny)
           #declare CountX=0;
           #while(CountX<Nx)
-        //#debug concat("\n\n********\nCountX= ",str(CountX,5,0), "\n")
-        //#debug concat("CountY= ",str(CountY,5,0), "\n********\n\n")
                #read(DataFile, Nodes[CountY][ CountX])
 
                #if (Nodes[CountY][CountX]<MinY)
@@ -695,13 +707,12 @@ DrawWireFrameXY(string filename DataFileName)
 
         #declare NodeRadii=NodeRadiiCoeff*QSurfSide;
         #declare WireRadii=WireRadiiCoeff*QSurfSide;
+// #debug concat("QSurf=", str(QSurfSide,10,7), "; NodeR=", str(NodeRadii,10,7), "; Wire radii=", str(WireRadii,10,7), "\n")
 
         #declare CountY=0;
         #while(CountY<Ny)
           #declare CountX=0;
           #while(CountX<Nx)
-        //#debug concat("\n\n********\nCountX= ",str(CountX,5,0), "\n")
-        //#debug concat("CountY= ",str(CountY,5,0), "\n********\n\n")
                #read(DataFile, Nodes[CountY][ CountX])
 
                #if (Nodes[CountY][CountX]<MinY)
@@ -777,10 +788,6 @@ DrawWireFrameXY(string filename DataFileName)
                               <CountY*deltaY, YYY2, -(CountX+1)*deltaX>,  WireRadii
                           }
                           sphere{<CountY*deltaY, YYY2, -(CountX+1)*deltaX>, WireRadii}
-                          texture{ Chrome_Metal
-                              finish { diffuse 0.9 phong 1 }
-                              scale 0.5 translate<0,1,0>
-                          } // end of texture ---------------------------
                     }
                 #end
 
@@ -793,11 +800,6 @@ DrawWireFrameXY(string filename DataFileName)
                               <(CountY+1)*deltaY, YYY2, -CountX*deltaX>, WireRadii
                         }
                         sphere{<(CountY+1)*deltaY, YYY2, -CountX*deltaX>, WireRadii}
-                        texture{ Chrome_Metal
-                            finish { diffuse 0.9 phong 1 }
-                            scale 0.5 translate<0,1,0>
-                        } // end of texture ---------------------------
-
                     }
                 #end
                  #declare CountX=CountX+1;
@@ -862,8 +864,6 @@ ImportDataRC(string filename DataFileName)
         #declare BaseZL=r2;
         #declare NRow=1;
 
-        #declare NodeRadii=NodeRadiiCoeff*QSurfSide;
-        #declare WireRadii=WireRadiiCoeff*QSurfSide;
         #local _Yval=0.0;
         #declare CountR=0;
         #while(CountR<Nr)
@@ -953,8 +953,6 @@ ImportDataXY(string filename DataFileName)
         #declare BaseZL=y2;
         #declare NRow=1;
 
-        #declare NodeRadii=NodeRadiiCoeff*QSurfSide;
-        #declare WireRadii=WireRadiiCoeff*QSurfSide;
         #local _Yval=0.0;
         #declare CountY=0;
         #while(CountY<Ny)
@@ -1008,7 +1006,7 @@ DrawNodePoints(float _scl)
 #macro DrawNodePoints(_scl) //= pure geometry ! use object{....  texture } construct
     #for (iy, 0,Ny-1)
        #for (ix, 0, Nx-1)
-           sphere{ 0 NodeRadiiCoeff
+           sphere{ 0 NodeRadiiCoeff*QSurfSide
                    scale <1, _scl ,1>
                    translate <QNodes[iy][ix].x, YScaleFactor*QNodes[iy][ix].y, QNodes[iy][ix].z >}
        #end
@@ -1031,13 +1029,16 @@ DrawLinearWires(float _wireR, boolean _Sphrs)
 *  DrawBSplineWires()
 ****/
 #macro DrawLinearWires(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR*QSurfSide;
+// was:    #local WireRadiiCoeff=_wireR*QSurfSide;
+    #local _WRadii = (_wireR>Tiny?_wireR:Tiny)*WireRadiiCoeff*QSurfSide;  // adjustment of bar radii
+    #local _NRadii = 1.41*_WRadii;                             
+//#debug concat("QSurf=", str(QSurfSide,10,7), "; NodeR=", str(_NRadii,10,7), "; Wire radii=", str(_WRadii,10,7), "\n")
     //======O-X-> X_r axis (real)
     #for (iy, 0, Ny-1)
         sphere_sweep{//
              linear_spline Nx
                 #for (ix,0,Nx-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
+                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), _WRadii
                 #end
         }
     #end
@@ -1047,12 +1048,11 @@ DrawLinearWires(float _wireR, boolean _Sphrs)
         sphere_sweep{//
              linear_spline Ny
                 #for (iy,0,Ny-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
+                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), _WRadii
                 #end
         }
     #end
     #if (_Sphrs)
-//        #local NodeRadiiCoeff = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 
@@ -1075,7 +1075,10 @@ DrawCubicWires(float _wireR, boolean _Sphrs)
 *  DrawBSplineWires()
 ****/
 #macro DrawCubicWires(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR*QSurfSide;
+// was:    #local WireRadiiCoeff=_wireR*QSurfSide;
+    #local _WRadii = (_wireR>Tiny?_wireR:Tiny)*WireRadiiCoeff*QSurfSide;  // adjustment of bar radii
+    #local _NRadii = 1.41*_WRadii;                             
+//#debug concat("QSurf=", str(QSurfSide,10,7), "; NodeR=", str(_NRadii,10,7), "; Wire radii=", str(_WRadii,10,7), "\n")
     //======O-X-> X_r axis (real)
     #for (iy, 0, Ny-1)
         #declare Start = 2*QNodes[iy][0] - QNodes[iy][1];
@@ -1090,11 +1093,11 @@ DrawCubicWires(float _wireR, boolean _Sphrs)
 
         sphere_sweep{//
              cubic_spline Nx+2
-             <1,YScaleFactor,1>*Start, WireRadiiCoeff
+             <1,YScaleFactor,1>*Start, _WRadii
                 #for (ix,0,Nx-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
+                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), _WRadii
                 #end
-           , <1,YScaleFactor,1>*End, WireRadiiCoeff
+           , <1,YScaleFactor,1>*End, _WRadii
         }
     #end
 
@@ -1111,95 +1114,28 @@ DrawCubicWires(float _wireR, boolean _Sphrs)
         #end
         sphere_sweep{//
              cubic_spline Ny+2
-             <1,YScaleFactor,1>*Start, WireRadiiCoeff
+             <1,YScaleFactor,1>*Start, _WRadii
                 #for (iy,0,Ny-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
+                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), _WRadii
                 #end
-           , <1,YScaleFactor,1>*End, WireRadiiCoeff
+           , <1,YScaleFactor,1>*End, _WRadii
         }
     #end
     #if (_Sphrs)
-//        #local NodeRadiiCoeff = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 
 #end // #macro
-
 
 /****M* WireSurf.inc/DrawBSplineWires()
-* PURPOSE
-*  Draws surface representation in the form of grid of LINEAR splines, ie. straight cuts of line
-* SYNOPSIS
-DrawBSplineWires(float _wireR, boolean _Sphrs)
-* INPUTS
-*  _wireR - float   = radii of the wire
-*  _Sphrs - boolean = draw spheres in place of nodes? yes/no
-* SEE ALSO
-*  ImportDataRC()
-*  ImportDataXY()
-*  DrawNodePoints()
-*  DrawLinearWires()
-*  DrawCubicWires()
-****/
-#macro DrawBSplineWiresOuted(_wireR, _Sphrs)
-    #local WireRadiiCoeff=_wireR*QSurfSide;
-    //======O-X-> X_r axis (real)
-    #for (iy, 0, Ny-1)
-        #declare Start = 2*QNodes[iy][0] - QNodes[iy][1];
-        #declare End   = 2*QNodes[iy][Nx-1]-QNodes[iy][Nx-2];
-
-        #ifdef(Debug)
-            #if(Debug!=0)
-                sphere{<1,YScaleFactor,1>*Start, .9*NodeRadiiCoeff texture{pigment{color rgb<1.0, .3,  .3>} finish{phong .7 reflection metallic}}}
-                sphere{<1,YScaleFactor,1>*End,   .9*NodeRadiiCoeff texture{pigment{color rgb< .3, .3, 1.0>} finish{phong .7 reflection metallic}}}
-            #end
-        #end
-
-        sphere_sweep{//
-             b_spline Nx+2
-             <1,YScaleFactor,1>*Start, WireRadiiCoeff
-                #for (ix,0,Nx-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
-                #end
-           , <1,YScaleFactor,1>*End, WireRadiiCoeff
-        }
-    #end
-
-    // =====O-Y->  Y_r axis  (real)
-    #for (ix, 0, Nx-1)
-        #declare Start = 2*QNodes[0][ix] - QNodes[1][ix];
-        #declare End   = 2*QNodes[Ny-1][ix]-QNodes[Ny-2][ix];
-
-        #ifdef(Debug)
-            #if(Debug!=0)
-               sphere{<1,YScaleFactor,1>*Start, .9*NodeRadiiCoeff texture{pigment{color rgb<1.0, .3,  .3>} finish{phong .7 reflection metallic}}}
-               sphere{<1,YScaleFactor,1>*End,   .9*NodeRadiiCoeff texture{pigment{color rgb< .3, .3, 1.0>} finish{phong .7 reflection metallic}}}
-            #end
-        #end
-        sphere_sweep{//
-             b_spline Ny+2
-             <1,YScaleFactor,1>*Start, WireRadiiCoeff
-                #for (iy,0,Ny-1)
-                    ,<1,YScaleFactor,1>*(QNodes[iy][ix]), WireRadiiCoeff
-                #end
-           , <1,YScaleFactor,1>*End, WireRadiiCoeff
-        }
-    #end
-    #if (_Sphrs)
-//        #local NodeRadiiCoeff = _wireR*sqrt(2);
-        union{ DrawNodePoints(1)}
-    #end
-#end // #macro
-
-/****M* WireSurf.inc/DrawBSplineWires2B()
 * PURPOSE
 *  Draws surface representation in the form of grid of Bezier splines, full implementation
 * SYNOPSIS
 DrawBSplineWires2B(float _Stfns, float _wireR, boolean _Sphrs)
 * INPUTS                        
-*  _Stfns - float > 0 = "stifness" of the spline; the bigger the more spline resembles straight lines;
-*                     = length of control point handles = 1/_Stfns [p.u.]
-*  _wireR - float > 0 = radii of the wire [p.u.]
+*  _Stfns - float > 0 = "straightness" of the spline; the bigger the more spline resembles straight lines;
+*                     = length of control point handles = 1/_Stfns [p.u.], values <= 0 ignored 
+*  _wireR - float > 0 = radii of the wire [p.u.], values <= 0 ignored, usually equals 1.0
 *  _Sphrs - boolean   = draw spheres in place of nodes? yes/no
 * SEE ALSO
 *  ImportDataRC()
@@ -1209,10 +1145,11 @@ DrawBSplineWires2B(float _Stfns, float _wireR, boolean _Sphrs)
 *  DrawCubicWires()
 ****/
 #macro DrawBSplineWires(_StfnsX, _StfnsY, _wireR, _Sphrs)
-    #local _WRadii = _wireR*QSurfSide;      
-    #local _NRadii = 1.5*_WRadii;                             
+    #local _WRadii = (_wireR>Tiny?_wireR:Tiny)*WireRadiiCoeff*QSurfSide;  // adjustment of bar radii
+    #local _NRadii = 1.41*_WRadii;    
+//#debug concat("QSurf=", str(QSurfSide,10,7), "; NodeR=", str(_NRadii,10,7), "; Wire radii=", str(_WRadii,10,7), "\n")                             
     #if (_StfnsX > 1e-7) #local _LHandleX = 1/_StfnsX; #else #local _LHandleX = 1e7; #end
-    #if (_StfnsY > 1e-7) #local _LHandleY = 1/_StfnsY; #else #local _LHandleY = 1e7;  #end
+    #if (_StfnsY > 1e-7) #local _LHandleY = 1/_StfnsY; #else #local _LHandleY = 1e7; #end
     //======O-X-> X_r axis (real) by cuts
     #for (iy, 0, Ny-1)
         #declare Start = QNodes[iy][   0] + _LHandleX*(QNodes[iy][   0] - QNodes[iy][   1])/vlength(QNodes[iy][   0] - QNodes[iy][   1]);
@@ -1290,16 +1227,11 @@ DrawBSplineWires2B(float _Stfns, float _wireR, boolean _Sphrs)
          }// sphere_sweep/Y
   #end
 
-
-
-
     #if (_Sphrs)
-//        #local _NRadii = _wireR*sqrt(2);
         union{ DrawNodePoints(1)}
     #end
 #end // #macro
 
-
-
+//============
 //============
 #end // #endif
