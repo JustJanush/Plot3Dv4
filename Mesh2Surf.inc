@@ -29,10 +29,10 @@
 
 // TODO: Interval computations - implementation of "fuzzy points"
 #ifndef(Mesh2Surf_INC)
-#declare Mesh2Surf_INC = "2018-09-17"; // last modification date
+#declare Mesh2Surf_INC = "2021-06-10"; // last modification date
 // common includes & definitions
 #version 3.7;
-#declare _FileName   = "Mesh2Surf.inc";
+#declare _FileName   = input_file_name;
 #declare _FileVerMaj = "4.0.0";
 #declare _FileVerMin = Mesh2Surf_INC;
 

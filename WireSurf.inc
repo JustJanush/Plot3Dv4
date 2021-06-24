@@ -35,10 +35,10 @@
 ****/
 
 #ifndef(WireSurf_INC)
-#declare WireSurf_INC = "2021-06-09";
+#declare WireSurf_INC = "2021-06-10";
 #version 3.7;
 
-#declare _FileName   = "WireSurf_INC";
+#declare _FileName   = input_file_name;
 #declare _FileVerMaj = "4.0.0.2";
 #declare _FileVerMin = WireSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")

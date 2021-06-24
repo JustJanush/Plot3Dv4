@@ -3,7 +3,7 @@
 *  Explains types used across this documentation. Usually types used have self-descriptive names
 *  and are the same as used in for example 'C'. However there are some which differ subtly in meaning
 *  or are specific to POVRay. Only POVRay's default types are used as POVRay doesn't have
-*  syntax for type definition, not counting for arrays of course :P
+*  syntax for type definition, not counting for arrays of course :P         
 * VERSION
 *  3.2.0.0, tested on PovRay 3.7.
 * AUTHOR
