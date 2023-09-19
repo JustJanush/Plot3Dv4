@@ -74,7 +74,7 @@
 #declare tmpColour   = rgb <0,0,1>; // well, I like blue colour...
 #declare tmpColour1  = rgbf<0.2, 0.3, 0.4, 0.1>;
 #declare tmpColour2  = rgbf<1.5, 1.3, 1.2, 0.3>;
-#declare tmpInterior = inGlass;
+#declare tmpInterior = interior{inGlass};
 #declare tmpTexture  = txBlue;
 #declare tmpMaterial = mtGlass;          
 
@@ -310,7 +310,7 @@
 #end
 
 #macro SetInterior( tInt ) // valid only together with texture defintions
-    #declare tmpInterior = tInt;
+    #declare tmpInterior = interior{tInt};
     #declare DeclareLevel = 2;
 #end
 

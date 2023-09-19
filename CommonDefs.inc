@@ -21,6 +21,7 @@
 *  (c) 2012-now by Janusz Opi³a Ph.D.
 *  AGH University of Science and Technology
 * HISTORY                  
+*   2023-08-30 - #macro DebugMsg(_msg, _lvl) added, helper debug messenger
 *   2021-06-09 
 *      - minor improvements, cleaning, Changelog feat. dropped as not very useful;
 *   2017-10-04
@@ -42,27 +43,34 @@
   end of RoboDoc comment
 ****/
 
-#ifndef(CommonDefs_INC)
-#declare CommonDefs_INC="2021-06-09"; // last modification date
+#ifndef(_CommonDefs_INC)
+#declare _CommonDefs_INC="2021-06-09"; // last modification date
 // common includes & definitions
 #version 3.7;
 #local _FileName   = "CommonDefs.INC";
 #local _FileVerMaj = "4.0.0.1";
-#local _FileVerMin = CommonDefs_INC;
+#local _FileVerMin = _CommonDefs_INC;
 
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 // ============================================
 
+// standard modules
 #include "colors.inc"
 #include "textures.inc"
 #include "shapes.inc"
 #include "glass.inc"
 #include "metals.inc"
 #include "strings.inc"
-#include "scFinish.inc"
+
+#ifndef (_CallStack ) // for tracking call stack xD
+  #declare _CallStack = "Call stack:\n"  
+#end
 
 // Just 4 safety
 #ifndef (Debug) #declare Debug=0; #end
+
+// ScPovPlot modules
+#include "scFinish.inc"
 
 // helper macro = A^2
 #macro SQR(A) (A)*(A) #end
@@ -531,8 +539,8 @@ material {
 
 /****f* CommonDefs.inc/Sfere
 * PURPOSE
-*  computes square of right triangle "b" side knowing "c" and "a"
-*  b^2=c^2-a^2
+*  computes residual f(x,y,z) = x^2+y^2+z^2 - _a^2, thus for threshold _a == 0; 
+*  isosurface{} object produces sphere of radii '_a' (check this)
 *
 * SYNOPSIS
 */
@@ -567,5 +575,37 @@ material {
 ******/
 
 
+/****f* CommonDefs.inc/DebugMsg
+* PURPOSE
+*  Handy debug messenger, turns on at given Debugging/verbose level
+*
+* SYNOPSIS
+*/
+#macro DebugMsg(_msg, _lvl)
+/*
+* INPUTS
+*  string _msg  - debugging message - raw text, no enhancement possible;
+*  integer _lvl - debugging level trigger
+* OUTPUTS
+*  none
+* SEE ALSO
+*  None
+*
+******/
+  #if (_lvl = 0) 
+    #debug _msg  
+  #else 
+    #if (bitwise_and( _lvl,Debug))
+       #debug _msg
+    #end      
+  #end   
+#end // macro
 
-#end
+#else
+ DebugMsg("Module Potential recalled\n",1)
+ #ifndef (_CallStack )
+   #declare _CallStack = "Call stack:\n"  
+ #end
+ #declare _CallStack = concat(_CallStack, _ModuleDescription,"\n")
+
+#end // #ifndef(_CommonDefs_INC)

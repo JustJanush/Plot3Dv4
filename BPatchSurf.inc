@@ -26,6 +26,7 @@
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
 * HISTORY                            
+* 2021-06-29 - raw points limits detection in RawDataSurface() macro
 * 2021-06-10 - minor improvements in comments
 *
 ****
@@ -33,11 +34,11 @@
 ****/
 
 #ifndef(BPatchSurf_INC)
-#declare BPatchSurf_INC = "2021-06-10";
+#declare BPatchSurf_INC = "2021-06-29";
 #version 3.7;
 
 #declare _FileName   = "BPatchSurf.inc";
-#declare _FileVerMaj = "4.0.0.2";
+#declare _FileVerMaj = "4.0.0.4";
 #declare _FileVerMin = BPatchSurf_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -82,6 +83,7 @@
 #declare tmpColour1  = rgbf<0.2, 0.3, 0.4, 0.75>; // ..transparent a little..
 #declare tmpColour2  = rgbf<1.5, 1.3, 1.2, 0.73>; // additional, secondary colour used by some objects ex. in BarShapes.inc module
 #declare DZero = 1E-4;    // minimal distance between grid & random point
+#declare _AutoRange = 0;  // data range is set manually
 /******/
 
 #declare NumPts =   0;    // just initialization
@@ -230,6 +232,38 @@ SetInterior(TInterior)
 *   VShift
 *****/
    #declare VShift = _vs;
+#end
+
+/****f* BPatchSurf.inc/Set_AutoRange
+* PURPOSE
+*  data range will be computed
+* SYNOPSIS
+*/
+#macro Set_AutoRange()
+/* 
+* INPUTS
+*  none
+* SEE ALSO
+*  one should also refer to:
+*   Cancel_AutoRange
+*******/
+    #declare _AutoRange = 1;
+#end
+
+/****f* BPatchSurf.inc/Cancel_AutoRange
+* PURPOSE
+*  data range will be set manually
+* SYNOPSIS
+*/
+#macro Cancel_AutoRange()
+/* 
+* INPUTS
+*  none
+* SEE ALSO
+*  one should also refer to:
+*   Set_AutoRange
+*******/
+    #declare _AutoRange = 0;
 #end
 
 /****f* BPatchSurf.inc/Inline functions
@@ -1090,7 +1124,7 @@ DrawAllPatches()                    // and then render it
    #while(rix < NumPts)
       #read(DataFile, xx, yy, zz)
       #declare RNodes[rix] = <xx, yy, VScale*zz+VShift>; // real world
-      #declare rix = rix + 1;
+      #declare rix = rix + 1;        
    #end
    #fclose DataFile
 //==========================//
@@ -1137,11 +1171,39 @@ DrawAllPatches()                    // and then render it
       #declare iy = iy+1;
    #end
 
-   // I think it should be chaanged x<>y due to POvRay Coord System
-   #declare SceneMaxX = y2;   #declare SceneMinX = y1;
-   #declare SceneMaxY =0.0;   #declare SceneMinY =0.0;
-   #declare SceneMaxZ =-x2;   #declare SceneMinZ =-x1;   // little bit strange MaxZ < MinZ!!
-
+   #if (_AutoRange=0)  
+   // I think it should be changed x<>y due to POvRay crazy Coord System
+       #declare SceneMaxX = y2;   #declare SceneMinX = y1;
+       #declare SceneMaxY =0.0;   #declare SceneMinY =0.0;
+       #declare SceneMaxZ =-x2;   #declare SceneMinZ =-x1;   // little bit strange MaxZ < MinZ!!
+    #else
+       // search for min/max
+       #local _xmi = RNodes[0].x;    #local _xma = RNodes[0].x;    
+       #local _ymi = RNodes[0].y;    #local _yma = RNodes[0].y;
+       #local _zmi = RNodes[0].z;    #local _zma = RNodes[0].z;
+       #for(_ip,0, NumPts-1)
+           #if (RNodes[_ip].x < _xmi) #local _xmi=RNodes[_ip].x; #end       
+           #if (RNodes[_ip].x > _xma) #local _xma=RNodes[_ip].x; #end       
+    
+           #if (RNodes[_ip].y < _ymi) #local _ymi=RNodes[_ip].y; #end       
+           #if (RNodes[_ip].y > _yma) #local _yma=RNodes[_ip].y; #end       
+    
+           #if (RNodes[_ip].z < _zmi) #local _zmi=RNodes[_ip].z; #end       
+           #if (RNodes[_ip].z > _zma) #local _zma=RNodes[_ip].z; #end       
+       #end   
+       #if (Debug>0)   
+         #debug "Raw points contained in the (real!) box:\n"
+            #debug concat("MinX=",str(_xmi,6,4),"; MaxX=",str(_xma,6,4),"\n")
+            #debug concat("MinY=",str(_ymi,6,4),"; MaxY=",str(_yma,6,4),"\n")
+            #debug concat("MinZ=",str(_zmi,6,4),"; MaxZ=",str(_zma,6,4),"\n")    
+         #debug concat("\'z\' scaling factor:", str(VScale, 10, 6),"\n")
+         #debug "=================\n"        
+       #end
+       #declare SceneMaxX =  _yma;   #declare SceneMinX =  _ymi;
+       #declare SceneMaxY =  _zma;   #declare SceneMinY =  _zmi;
+       #declare SceneMaxZ = -_xma;   #declare SceneMinZ = -_xmi;   // little bit strange MaxZ < MinZ!!
+       
+   #end
 //   #declare Nodes = array [Ny][Nx];
 //   #declare Nodes[0][0] = 0.0;
 

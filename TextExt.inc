@@ -7,7 +7,7 @@
 *   polish national characters is displayed. Do not even try to pronounciate it ;)
 *   |html <hr width=50% align="left">
 * VERSION
-*  4.0.0, tested on PovRay 3.7.
+*  4.2.0, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -21,7 +21,12 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.
 *  AGH University of Science and Technology
-* HISTORY                                       
+* HISTORY         
+*  2023-08-30, correction of debugging levels, CommonDefs.DebugMsg() added  
+*  2023-06-02, added TextAligned() macro, inserts aligned block of text.                            
+*  2023-05-25, #S, #s commands added - scaling text up and down by factor.
+*  2023-05-23, removing irritating right curly paranthesis bug. 
+               Single paranthesis ends all blocks and cancels all iteration levels. 
 *  2018-02-03, 'tau' added
 *  2017-09-25, some german "umlauts" added 
 *  2017-04-12, '¯' letter corrected, minor changes
@@ -35,12 +40,12 @@
 
 #version 3.7;
 #ifndef(TextExt_INC)
-#declare TextExt_INC = "2018-09-17"; // last edition date
+#declare TextExt_INC = "2023-08-30"; // last edition date
 
 #declare _FileName   = "TextExt.inc";
-#declare _FileVerMaj = "4.0.0";
+#declare _FileVerMaj = "4.2.1";
 #declare _FileVerMin = TextExt_INC;
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+DebugMsg( concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n"), 0)
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;
@@ -59,13 +64,13 @@
 * SOURCE
 */
 // `a  - (LEFT apostrophe) 'ogonkified' letter - here polish accented as of now
-//  _  - sub-script next character
-//  ^  - super-script next character
-// { } - block of super/sub-script (direct brackets on regular line)
-// .   - inserts dot. Surprised? Utilizes superellipsoid object on regular line, raw dot in indexes.
-// " " - regular space (just hit 'Space')
+// { } - block of super/sub-script but just curly brackets on base line
+//  _  - sub-script next character or whole {block}
+//  ^  - super-script next character or whole {block}
+//  .  - inserts dot(ie. '.') Surprised? Utilizes superellipsoid object on base line, raw dot in indexes.
+// " " - regular space (just hit 'Space' key)
 //  `| - vertical bar in indexes, but..
-//  |  - short space on regular line
+//  |  - short space on base line
 // double `` means single `  (not in super/sub-script)
 // double ^^ means single ^  (not in super/sub-script)
 // double \\ means single \
@@ -74,35 +79,52 @@
 /*******/
 
 
-/****iv* TextExt.inc/SubSupScale, SubShift, SupShift, UpPos, DnPos, SpcStub, _DotScalingFactor, _Dp, _HCur, _VCur, _TLen, _RFac, __Cnt
+/****iv* TextExt.inc/_SubSupScale, _SubShift, _SupShift, _UpPos, _DnPos, _SpcStub, _DotScalingFactor, _Dp, _HCur, _VCur, _TLen, _RFac, __Cnt
 * PURPOSE
 *   Helper variables
 * SOURCE
-*/
-#declare SubSupScale = 0.7;  // lower and upper indexes are scaled by this factor from base font.
-#declare SubShift    = 0.3;  // relative down shift of subscripts
-#declare SupShift    = 0.8;  // relative up shift of superscripts
-#declare UpPos       =  SupShift;  // vertical position of cursor - superscripts
-#declare DnPos       = -SubShift;  // vertical position of cursor - subscripts
-#declare _Dp         = 0.1;        // Depth of characters
-#declare SpcStub     = "-";         // default fake space character
-#declare _DotScalingFactor = 0.75; // "dot" size. You don't need to change this - usually.
+*/                                                  
+// removed #declare _SubSupScale = 0.7;  // lower and upper indexes are scaled by this factor from base font.
+#declare _RFac = 0.69;        // size reduction factor for indexes
+#declare _SubShift    = 0.3;  // relative down shift of subscripts
+#declare _SupShift    = 0.8;  // relative up shift of superscripts
+#declare _UpPos       =  _SupShift;  // vertical position of cursor - superscripts
+#declare _DnPos       = -_SubShift;  // vertical position of cursor - subscripts            
+#declare _UpSc        = 1.5;      // up-scling factor for #S command
+#declare _DnSc        = 1.0/1.5;  // down-scling factor for #s command
+#declare _Dp         = 0.1;          // *Depth of characters
+#declare _SpcStub     = "-";         // *default fake space character
+#declare _DotScalingFactor = 0.75;   // "dot" size. You don't need to change this - usually.
 #declare _HCur = 0.00; // current horizontal position of cursor
 #declare _VCur = 0.00; // current vertical position of cursor
-#declare _TLn  = 0;    // length of string parsed constant during parsing
-#declare _RFac = 0.69; // reduction factor for indexes
-#declare __Cnt = 0.00; // accounts calls to ParseNext() macro as POVRay doesn't implements "static" variables
+#declare _TLn  =    0; // [int] length of string parsed constant during parsing
+#declare __Cnt = 0.00; // accounts calls to TextExt()[aka. ParseNext()] macro as POVRay doesn't implements "static" variables
 #declare __BCnt= 0.00; // {} block level counter
-#declare _tbox = 0.00; // size of parsed text block
+#declare _tbox = 0.00; // [+float] temporary size of parsed text block
+#declare _OCount  = 0;  // number of text objects tracking
+#declare _LnSpc   = 1;  // line spacing for #n command
+// TextAligned() parameters:                                         
+#declare _Left    = 0;       // justify left - default for Text() and TextExt() "#n" command
+#declare _Center  = 1;       // center
+#declare _Right   = 2;       // justify right
+#declare _Justif  = 3;       // justify left/right text in the block   
+#declare _JustifL = _Justif; // the same setting as _Justif          
+#declare _JustifR = 4;       // align too short lines to the right instead of justifying
+#declare _JustifC = 5;       // align too short lines to the center instead of justifying                    
+#declare _SclLmts = 0.7; 
+#declare TEXT_WIDTH = 0.0;   // internal - width of the text
 /*******/
 
-// internal array, just for debugging purposes
-#declare __Prf = array[7] {"", ">>",
-                               "--->>",
-                               "------>>",
-                               "--------->>",
-                               "------------>>",
-                               "--------------->>"};
+// internal array, for debugging purposes only
+#declare __Prf = array[9] {"", "1>>",
+                               "2--->>",
+                               "3------>>",
+                               "4--------->>",
+                               "5------------>>",
+                               "6--------------->>",
+                               "7----------------->>",
+                               ">>7--------------->>[]"
+                           };
 
 
 /****iv* TextExt.inc/_ArNap [helper array]
@@ -112,7 +134,6 @@
 */
 #declare _ArNap = array[1];
 /*******/
-
 
 
 /****v* TextExt.inc/Fonts, _FLibera,  _FCourierI,  _FTimes, _FSegoa, _FArialUni, _FArialRond, _FCooper,  _FCorsiva
@@ -133,6 +154,46 @@
 /*******/
 
 
+/****f* TextExt.inc/SetUpScale
+* PURPOSE
+*  Sets up-scaling factor for #S command
+* SYNOPSIS
+*/
+#macro SetUpScale(_d ) // positive float (negative values or zero may couse erratic results)
+/*
+ * INPUTS
+ *  _d - positive float 
+ *******/
+   #declare _UpSc = _d;
+#end
+
+/****f* TextExt.inc/SetUpScale
+* PURPOSE
+*  Sets down-scaling factor for #s command
+* SYNOPSIS
+*/
+#macro SetDownScale(_d ) // positive float (negative values or zero may couse erratic results)
+/*
+ * INPUTS
+ *  _d - positive float 
+ *******/
+   #declare _DnSc = _d;
+#end
+
+/****f* TextExt.inc/SetLineSpac
+* PURPOSE
+*  Sets line spacing for #n command
+* SYNOPSIS
+*/
+#macro SetLineSpac(_d ) // positive float
+/*
+ * INPUTS
+ *  _d - positive float (negative values or zero allowed but may lead to strange results)
+ *******/
+   #declare _LnSpc = _d;
+#end
+
+
 /****f* TextExt.inc/SetLDpth
 * PURPOSE
 *  Sets "depth" of the text object
@@ -146,19 +207,32 @@
    #declare _Dp = _d;
 #end
 
-/****f* TextExt.inc/SetSpcStub
+/****f* TextExt.inc/Set_SpcStub
 * PURPOSE
 *  Sets character imitiating 'space'
 * SYNOPSIS
 */
-#macro SetSpcStub(_spc ) // string _spc declares space width character(s)
+#macro Set_SpcStub(_spc ) // string _spc declares space width character(s)
 /*
  * INPUTS
- *  string _spc - may be "-" or "."  or even "asd"
+ *  string _spc - may be single character, eg. "+" or "." or even whole string, eg. "asd"
  *******/
-   #declare SpcStub = _spc;
+   #declare _SpcStub = _spc;
 #end
 
+/****f* TextExt.inc/Set_ShortLineParam
+* PURPOSE
+*  Sets limit for "too short" lines of text
+* SYNOPSIS
+*/
+#macro Set_ShortLineParam(_in)
+/*
+ * INPUTS
+ *  positive float <=1 _in - discriminant value, lines shorter than this won't be adjusted.
+ *******/
+
+  #declare _SclLmts = _in;
+#end  
 
 /// initial default safe value
 /****f* TextExt.inc/Set_TFont, _FF
@@ -215,7 +289,7 @@
 #declare _oe_  = "\u00F6";  // ö
 #declare _OE_  = "\u00D6";  // Ö
 
-//
+// greek and other scientific
 #declare _at_     = "\u0040";  // @
 #declare _spc_    = "\u0020";  // just Space
 #declare _Ao_     = "\u00C5";  // Angstrem
@@ -329,25 +403,25 @@
 //     1234567890   5 chars to retrieve
 //     _i=4, _j=8
     #declare _t = substr(_s, _i, _j-_i+1);
-#if (Debug>1) #debug concat("\ni=", str(_i,2,0)," j=", str(_j,2,0), "; \"", _s,"\"=>>\""_t, "\"\n") #end
+    DebugMsg(concat("\ni=", str(_i,2,0)," j=", str(_j,2,0), "; \"", _s,"\"=>>\""_t, "\"\n"), 8)
     _t
 #end
 
 /****f* TextExt.inc/TrimStrC
 * PURPOSE
-*  Removes trailing spaces from the string passed.
+*  Removes trailing character '_c' from the string passed.
 *  Spaces are expected before and after the core text.
 * EXAMPLE
-*  #declare SomeStr = "    ABC DE  ";
-*  #declare SomeStr = TrimStr(SomeStr);
-*  Now string SomeStr equals: "ABC DE". Intern spaces are preserved.
+*  #declare SomeStr = ".....ABC..DE...";
+*  #declare SomeStr = TrimStrC(SomeStr,".");
+*  Now string SomeStr equals: "ABC DE". Intern chcracters are preserved.
 * SYNOPSIS
 */
 #macro TrimStrC ( _s, _c )
 /*
 * INPUTS
 *  string - text to deal with.
-*  char   - charcter to skip over
+*  char   - character to skip over
 * OUTPUTS
 *  string - stripped text.
 * SEE ALSO
@@ -369,10 +443,9 @@
 //     1234567890   5 chars to retrieve
 //     _i=4, _j=8
     #declare _t = substr(_s, _i, _j-_i+1);
-#if (Debug>1) #debug concat("\ni=", str(_i,2,0)," j=", str(_j,2,0), "; \"", _s,"\"=>>\""_t, "\"\n") #end
+    DebugMsg(concat("\ni=", str(_i,2,0)," j=", str(_j,2,0), "; \"", _s,"\"=>>\""_t, "\"\n"), 8)
     _t
 #end
-
 
 
 /****M* TextExt.inc/UnicodifyPL  [ (_In) ]
@@ -428,9 +501,7 @@
            #end  // #if..#end
        #end
        #declare _Tmp = concat(_Tmp, _Chr); //
-       #if (Debug>__Stable)
-         #debug concat("[UnicodifyPL > " str(i,4,0) ": " _Tmp, "\n")
-       #end
+       DebugMsg( concat("[UnicodifyPL > " str(i,4,0) ": " _Tmp, "\n"), 8)
        #local i=i+1;
     #end
     #declare _In = _Tmp;
@@ -519,55 +590,69 @@
 *   works recursively
 * SYNOPSIS
 */
-#macro TextExt( _ps, _hc, _vc, _sc)
+#macro TextExt( _ps, _hc, _vcc, _sc)
 // string to parse is stored in a global array, see INPUTS section
 // character - any UTF character
 // Text = [["" | "{" | "#" | character ] | ... ]
-//  # command prefix
+//  # command prefix               
+// commands:
 // ## - '#' itself
-// #v - make FOLLOWING character or characters enclosed in curly brackets {} a vector ex. #vF - Force vector
+// #o - overlay first block over second #o{abc}{dfg}
+// #n - apply new line and CR for multiline text. Use SetLineSpac() for tuning;
+// #v - TODO: make FOLLOWING character or characters enclosed in curly brackets {} a vector ex. #vF - Force vector
+// #c - TODO: centering character;
+// #m - TODO: matrix [nxn]
+// #S - scale up next character/block by constant multiplier each time used, eg: #S{#Sx} {if nested, curly braces required} 
+// #s - scale down next character/block by constat divider each time used, eg: #s{#sx} {if nested, curly braces required}  
 // `  - /left apostrophe/ - accented letter (polish '¹' for example)
-// {}
-// ^
-// _
+// {} - group/block
+// ^  - upper index
+// _  - lower index
 // |   - short space
 // " " - regular space
 
 /*
  * INPUTS
  *  _ps  - string to parse is stored in global array _ArrNap[], returns (by ref) position of next char, to  parse
- *  _hc  - horizontal position of cursor
- *  _vc  - vertical position of cursor
+ *  _hcc  - horizontal position of cursor
+ *  _vcc - vertical position of cursor
  *  _sc  - local size modifier. Final size of text should be set in scene file (presumedly by scale<> statement ).
  * SEE ALSO
  *  UnicodifyPL ()
- *  Text ()
+ *  Text ()   
+ *  TextAligned ()
  ****/
-object{
+object{            
+  #declare _OCount = _OCount + 1;
   union{
-    #if (Debug>__Stable) #debug concat( "Entering Text() macro at level =", str( __Cnt,3,0), "\n") #end
-    #local _Pos  = _ps;
+    DebugMsg(concat( "Entering Text() macro at level =", str( __Cnt,3,0), "\n"), 8)
+    #local _Pos  = _ps;   
+    #local _vc = _vcc;
+    //x #local _hc = _hcc;
+    #local _EOB = false;
     #declare __Cnt = __Cnt+1; // increment recurrence counter
-    #if (Debug>__Stable) #debug concat( "Now parsing Text() macro at level =", str( __Cnt,3,0), "\n") #end
-    #while (_Pos <= _TLn)  // no longer than length of string - string is placed from _ps=1.._TLn
+    DebugMsg(concat( "Now parsing Text() macro at level =", str( __Cnt,3,0), "\n"), 8)
+    #while (_Pos <= _TLn )  // no longer than length of string - string is placed from _ps=1.._TLn
        #if (__Cnt<8)
          #local __tc = __Cnt;
        #else
-         #local __tc = 7;
+         #local __tc = dimension_size(__Prf, 1)-1;  // 8;
        #end
-       #if (Debug>__Stable) #debug concat(__Prf[__tc], " Pos = " str( _Pos,3,0) "  "   _ArNap[_Pos], " \n") #end
+       DebugMsg(concat(__Prf[__tc], " Pos = " str( _Pos,3,0) " ->[ "   _ArNap[_Pos], " ]\n"), 8)
        #local _Chr=_ArNap[_Pos];
 // =================================================================
        #if ((_Chr="{") & (_Pos<_TLn)) // just move to next character & continue
           #local _Pos = _Pos + 1;
-          #if (__Cnt > 1)
+          #if (__Cnt > 1)        
+               // TextExt(_Pos, _hc, _vc+0.0, _sc+0.0) // rub your tommy
                TextExt(_Pos, _hc, _vc, _sc) // rub your tommy
           #end
 // =================================================================
-       #elseif (_Chr="}") // reset and go ahead
-          #if (Debug>__Init) #debug concat( __Prf[__Cnt], " __Cnt= ", str(__Cnt,4,0), " end of {} block met\n") #end
-          #if (__Cnt > 1)
-              #break
+       #elseif ((_Chr="}")) // reset and go ahead
+          DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " end of {} block met\n"), 8)
+          #if (__Cnt > 1) 
+               #local _EOB = true;
+               #break   // break out of the 'while' loop
           #else
              #local _Pos = _Pos + 1;
           #end  // end of block in index otherwise just continue with next char
@@ -590,14 +675,16 @@ object{
               #local _c = _ArNap[_Pos];  // get next character & check if = '#' if not - continue
               #local _Uh = _hc;
               // upper index: read one or more until right '}' recursively
-              #if (Debug>__Init) #debug concat(__Prf[__Cnt], "command #o: upper" str(_Pos, 4, 0), "\n") #end
+              DebugMsg(concat(__Prf[__tc], "command #o: upper" str(_Pos, 4, 0), "\n"), 8)
               #if (_c != "{") // OK, it is single upper index
-                  #local Upper = object {InsrtChr(_c, _Uh, _vc+_RFac*UpPos*_sc, _RFac*_sc)};
+                  #local Upper = object {InsrtChr(_c, _Uh, _vc+_RFac*_UpPos*_sc, _RFac*_sc)};
+//                  #local _Pos = _Pos + 1;
               #else
                   #local _Pos = _Pos + 1;
-                  #local Upper = object {TextExt(_Pos, _Uh, _vc+_RFac*UpPos*_sc, _RFac*_sc)}; //  {block} - so go recursive
+                  #local Upper = object {TextExt(_Pos, _Uh, _vc+_RFac*_UpPos*_sc, _RFac*_sc)}; //  {block} - so go recursive
+//                  #local _Pos = _Pos + 1;
               #end
-              #if (Debug>__Init) #debug concat(__Prf[__Cnt], "command #o: upper" str(_Pos, 4, 0), "\n") #end
+              DebugMsg(concat(__Prf[__tc], "command #o: upper" str(_Pos, 4, 0), "\n"), 8)
               // created upper index as (plain as of now) text object
 
 //========================================================
@@ -605,14 +692,16 @@ object{
               #local _c = _ArNap[_Pos];  // get next character & check if = '#' if not - continue
               #local _Lh = _hc;
               // lower index: read one or more until right '}' recursively
-              #if (Debug>__Init) #debug concat(__Prf[__Cnt], "command #o: lower" str(_Pos, 4, 0), "\n") #end
+              DebugMsg(concat(__Prf[__tc], "command #o: lower" str(_Pos, 4, 0), "\n"), 8)
               #if (_c != "{") // OK, it is single lower index
-                  #local Lower = object {InsrtChr(_c, _Lh, _vc+_RFac*DnPos*_sc, _RFac*_sc)};
+                  #local Lower = object {InsrtChr(_c, _Lh, _vc+_RFac*_DnPos*_sc, _RFac*_sc)};
+//                  #local _Pos = _Pos + 1;
               #else
                   #local _Pos = _Pos + 1;
-                  #local Lower = object {TextExt(_Pos, _Lh, _vc+_RFac*DnPos*_sc, _RFac*_sc)}; //  {block} - so go recursive
+                  #local Lower = object {TextExt(_Pos, _Lh, _vc+_RFac*_DnPos*_sc, _RFac*_sc)}; //  {block} - so go recursive
+//                  #local _Pos = _Pos + 1;
               #end
-              #if (Debug>__Init) #debug concat(__Prf[__Cnt], "command #o: lower" str(_Pos, 4, 0), "\n") #end
+              DebugMsg(concat(__Prf[__tc], "command #o: lower" str(_Pos, 4, 0), "\n"), 8)
               // created lower index as (plain as of now) text object
 
 //========================================================
@@ -621,6 +710,37 @@ object{
               #local _hc = max(_Uh, _Lh) + Text_Space(_FF, "|", _RFac*_sc, <0,0,0>);   // Additional adjustement update _HCur position
 
               #local _Pos = _Pos + 1;
+          #elseif (_Chr="n")  // command: #n new line/caret return - left justification
+              #local _Pos = _Pos + 1; // TODO: center/right justification
+              #local _hc = 0.0;
+              #local _vc = _vc - (_LnSpc)*_sc;
+          #elseif (_Chr="S")   
+              #local _Pos = _Pos + 1; 
+              #local _Chr=_ArNap[_Pos]; // then inspect next character
+              #if (_Chr="{")  // oh, there is {..} segment, go recursive
+                  DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block begin\n"), 8)
+                  TextExt(_Pos, _hc, _vc, _UpSc*_sc) // single char. or {block}       
+                  #local _Pos = _Pos + 1;  // parsing out right '}'
+                  DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block finished\n"), 8)
+              #else  // insert single character as subscript                                                             
+                  DebugMsg(concat(__Prf[__tc], " Pos = " str( _Pos,3,0) " ->[ "   _ArNap[_Pos], " ]\n"), 8)
+                  InsrtChr(_Chr, _hc, _vc, _UpSc*_sc)
+                  #local _Pos = _Pos + 1;
+              #end
+          #elseif (_Chr="s")   
+              #local _Pos = _Pos + 1; 
+              #local _Chr=_ArNap[_Pos]; // then inspect next character
+              #if (_Chr="{")  // oh, there is {..} segment, go recursive
+                  DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block begin\n"), 8)
+                  TextExt(_Pos, _hc, _vc, _DnSc*_sc) // single char. or {block}       
+                  #local _Pos = _Pos + 1;  // parsing out right '}'
+                  DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block finished\n"), 8)
+              #else  // insert single character as subscript                                                             
+                  DebugMsg(concat(__Prf[__tc], " Pos = " str( _Pos,3,0) " ->[ "   _ArNap[_Pos], " ]\n"), 8)
+                  InsrtChr(_Chr, _hc, _vc, _DnSc*_sc)
+                  #local _Pos = _Pos + 1;
+              #end
+
           #elseif (_Chr="v")  // command: #v just "vectorizes" next symbol
               #local _Pos = _Pos + 1; // not implemented yet - just go next
           #else // just inserts unrecognized character, also '#' or '|'
@@ -631,13 +751,15 @@ object{
 // ===[ subscripts ]==============================================================
        #elseif ((_Chr="_") & (_Pos<_TLn)) // ... & next character exist!
           #local _Pos = _Pos + 1;
-          #local _Chr=_ArNap[_Pos]; // then inspect next character
+          #local _Chr = _ArNap[_Pos]; // then inspect next character
           #if (_Chr="{")  // oh, there is {..} segment, go recursive
-              #if (Debug>__Init) #debug concat( __Prf[__Cnt], " __Cnt= ", str(__Cnt,4,0), " {_} block begin\n")    #end
-              TextExt(_Pos, _hc, _vc+_RFac*DnPos*_sc, _RFac*_sc) // single char. or {block}
-              #if (Debug>__Init) #debug concat( __Prf[__Cnt], " __Cnt= ", str(__Cnt,4,0), " {_} block finished\n") #end
-          #else  // insert single character as subscript
-              InsrtChr(_Chr, _hc, _vc+_RFac*DnPos*_sc, _RFac*_sc)
+              DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block begin\n"), 8)
+              TextExt(_Pos, _hc, _vc+_RFac*_DnPos*_sc, _RFac*_sc) // single char. or {block}       
+              #local _Pos = _Pos + 1;  // was lacking (2023-05-24)
+              DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {_} block finished\n"), 8)
+          #else  // insert single character as subscript                                                             
+              DebugMsg(concat(__Prf[__tc], " Pos = " str( _Pos,3,0) " ->[ "   _ArNap[_Pos], " ]\n"), 8)
+              InsrtChr(_Chr, _hc, _vc+_RFac*_DnPos*_sc, _RFac*_sc)
               #local _Pos = _Pos + 1;
           #end
 // ===[ superscripts ]==============================================================
@@ -645,16 +767,17 @@ object{
           #local _Pos = _Pos + 1;
           #local _Chr = _ArNap[_Pos]; // then inspect next character
           #if (_Chr="{")  // oh, there is {..} segment, go recursive
-              #if (Debug>__Init) #debug concat( __Prf[__Cnt], " __Cnt= ", str(__Cnt,4,0), " {^} block begin\n")    #end
-              TextExt(_Pos, _hc, _vc+_RFac*UpPos*_sc, _RFac*_sc) // single char. or {block}
-              #if (Debug>__Init) #debug concat( __Prf[__Cnt], " __Cnt= ", str(__Cnt,4,0), " {^} block finished\n") #end
+              DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {^} block begin\n"), 8)
+              TextExt(_Pos, _hc, _vc+_RFac*_UpPos*_sc, _RFac*_sc) // single char. or {block}
+              #local _Pos = _Pos + 1;  // was lacking (2023-05-24)
+              DebugMsg(concat( __Prf[__tc], " __Cnt= ", str(__Cnt,4,0), " {^} block finished\n"), 8)
           #else  // insert single character as subscript
-              InsrtChr(_Chr, _hc, _vc+_RFac*UpPos*_sc, _RFac*_sc)
+              InsrtChr(_Chr, _hc, _vc+_RFac*_UpPos*_sc, _RFac*_sc)
               #local _Pos = _Pos + 1;
           #end
 // ===[ real & important characters ]==============================================================
        #elseif (_Chr=" ")
-          #local _hc = _hc + Text_Width(_FF, SpcStub, _sc, 0);
+          #local _hc = _hc + Text_Width(_FF, _SpcStub, _sc, 0);
           #local _Pos = _Pos + 1;
 // =================================================================
        #elseif (_Chr=".") // dot replacement
@@ -679,11 +802,108 @@ object{
     #end   // #while()
   }
   #declare __Cnt = __Cnt-1; // Finally decrease recurrence counter
-  #local _ps  = _Pos;
-
+  #local _ps  = _Pos;  
+  DebugMsg(concat("Num of objects = ", str(_OCount,5,0), "\n"), 8)
 }
 #end // #macro  ()
 
+
+/****M* TextExt.inc/TextAligned  [ (array[str], int, float) ]
+* PURPOSE
+*  Parses array _Page[] of strings passed to makro and returns object.
+*   Every string is a separate line and is parsed using Text() macro, ie. accepts local formatting.
+*   Usually one don't need to use this macro directly. It is designed to be called indirectly by Text () front macro.
+*   REMARK: This should work as expected with ANY font.
+*  Formats many lines of text and alignes them as required (left/center/right/justifiedLeft/justifiedRight/justifiedCentered), 
+*   escape sequences applies.
+*   For justified alignment, text should be manually preformatted, no automatic line breaking is implemented.
+*   Lines too short for length adjustment will be aligned left, center or right depending on variant selected.
+*   Text is just scaled no sophisticated intraword or intra letter spacing is applied.
+*   This macro enhances "#n" command of Text() and TextExt() macros. #n command should not be used in
+*   input strings as it is incompatible with line advancement algorithm, but no fatal error is expected if used.
+* SYNOPSIS
+*/
+#macro TextAligned(_Page, _mode, _LStep)
+/*
+ * INPUTS
+ *  _Page  - local array of string to parse, == "page"
+ *  _mode  - int mode of alignment 0..4, (left/center/right/justifiedLeft/justifiedRight)
+ *  _LStep - line advancement
+ * SEE ALSO
+ *  UnicodifyPL ()
+ *  Text ()       
+ *  TextExt ()
+ ****/
+
+    #local _Lines = array[dimension_size(_Page, 1)];   // {objects}
+    #local _LinLgth = array[dimension_size(_Lines, 1)]; // num floats
+    #local _LinLgth[0] = dimension_size(_Lines, 1);    // Last available array index 
+    #local _BaseLine = 0.0;
+    #local _AllMaxX  = 0.0;
+    
+    #local N1 = union{
+        #for(_i, dimension_size(_Page, 1)-1, 1, -1 )
+           #local _obj  = Text(_Page[_i]);
+           #local _maxX = max_extent(_obj).x;
+           #local _maxY = max_extent(_obj).y;   
+           #switch (_mode)
+              #case (_Left)        
+                      #local _maxX = _maxX / 2.0;
+                      object{_obj translate <0, _BaseLine, 0>}
+                      #local _BaseLine = _BaseLine + _LStep; //_LStep*_maxY;
+                      #break 
+              #case (_Center)
+                      #local _maxX = _maxX / 2.0;
+                      object{_obj translate <-_maxX, _BaseLine, 0>}
+                      #local _BaseLine = _BaseLine + _LStep; //_LStep*_maxY;
+                      #if (_maxX>_AllMaxX) #local _AllMaxX = _maxX; #end
+                      #break 
+              #case (_Right)       
+                      object{_obj translate <-_maxX, _BaseLine, 0>}
+                      #local _BaseLine = _BaseLine + _LStep; //_LStep*_maxY;
+                      #if (_maxX>_AllMaxX) #local _AllMaxX = _maxX; #end
+                      #break 
+              #case (_Justif)      
+              #case (_JustifR)      
+              #case (_JustifC)  
+                      // "Justified" 1st scan - dimensioning 
+                      #local _Lines[_i]   = object{_obj translate <0, _BaseLine, 0>}
+                      #local _LinLgth[_i] = _maxX;
+                      #local _BaseLine = _BaseLine + _LStep; //_LStep*_maxY;
+                      #if (_maxX>_AllMaxX) #local _AllMaxX = _maxX; #end
+                      #break
+              #else #break        
+           #end
+        #end          
+        #switch(_mode) 
+            #case(_Left)    #break
+            #case(_Center)  translate<_AllMaxX,0,0> #break
+            #case(_Right)   translate<_AllMaxX,0,0> #break
+            #case(_Justif)  #break
+            #else #break
+        #end
+    }                 
+    
+    #if(_mode = _Justif | _mode = _JustifR | _mode = _JustifC )
+    #local N1 = union{ // "Justified" 2nd scan - instancing objects 
+        #for(_i, 1, dimension_size(_Lines, 1)-1)
+          object{_Lines[_i]                            
+               #if(_LinLgth[_i] > _SclLmts*_AllMaxX)
+                 scale <_AllMaxX/_LinLgth[_i], 1, 1>
+               #else
+                   #if (_mode = _JustifR)
+                     translate<_AllMaxX-_LinLgth[_i], 0, 0>  
+                   #elseif(_mode = _JustifC)  
+                     translate<(_AllMaxX-_LinLgth[_i])/2.0, 0, 0>  
+                   #end  
+               #end   
+          }
+        #end
+    } 
+    #end   
+    #declare TEXT_WIDTH = _AllMaxX;    
+object{N1}
+#end // #macro TextAligned
 
 
 #end // #ifndef

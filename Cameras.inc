@@ -772,9 +772,9 @@ light_source{VC color rgb 1.5}
     #local _dpth  = _scf*abs((_tMax.z-_tMin.z));
 // only number's correction - text object still needs real scaling
     #if (Debug>0)
-        #debug concat("Text width =", str(_wdth,10,5), "\n")
-        #debug concat("Text height=", str(_hght,10,5), "\n")
-        #debug concat("Text depth =", str(_dpth,10,5), "\n")
+        DebugMsg(concat("Text width =", str(_wdth,10,5), "\n"), 2)
+        DebugMsg(concat("Text height=", str(_hght,10,5), "\n"), 2)
+        DebugMsg(concat("Text depth =", str(_dpth,10,5), "\n"), 2)
     #end    
 #end
 

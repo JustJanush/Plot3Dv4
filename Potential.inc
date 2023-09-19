@@ -23,20 +23,25 @@
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
 * HISTORY 
-*  2016-01-05 - Tricubic interpolation, KDE interpolation
-*  2016-02-03 - inserted procedures for isosurface interpolation
+*  2023-08-30, correction of debugging levels, CommonDefs.DebugMsg() added  
+*              many enhancements, added: DrawInterpolGrdSrfSmoothed() and ComputeGridGradient()
+*              from now gradient value is interpolated using full trilinear implementation
+*  2016-01-05 - Tricubic interpolation, KDE interpolation;
+*  2016-02-03 - inserted procedures for isosurface interpolation;
+*  2023-08-23 - DrawInterpolGrdSrfSmoothed added(), documentation improved;
 ****
   end of RoboDoc comment
 ****/
 
 #version 3.7;
-#ifndef(Potential_INC)
-#declare Potential_INC = "2018-09-22"; // last editing date        
+#ifndef(_Potential_INC)
+#declare _Potential_INC = "2023-09-15"; // last editing date        
 
 #declare _FileName   = "Potential.inc";
 #declare _FileVerMaj = "4.0.1";
-#declare _FileVerMin = Potential_INC; 
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _FileVerMin = _Potential_INC;
+#local _ModuleDescription = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug _ModuleDescription;
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;
@@ -832,12 +837,12 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
  //    Drawing facility, gradient for a whole structure  //
 //======================================================//
 #macro DrawInterpolSrf(_trsh, _dd) // _trsh - isosurface threshold
-#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
 
 #declare _dd3 = pow(_dd,3);
     #for(izn,0,dimension_size(QVr,3)-2)
-        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ," \n")    
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ," \n"), 1)    
         #for(iyn,0,dimension_size(QVr,2)-2)
             #for(ixn,0,dimension_size(QVr,1)-2)                               
                 // do not analyze "empty" cells
@@ -867,7 +872,6 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                             )      
                      |  (QVr[ixn][iyn][izn][4])     
                     ) // do nothing
-//                #debug concat(ttr_ " Cell [", str(ixn,3,0), "Cell [", str(ixn,3,0),"][", str(iyn,3,0),"][",str(izn,3,0),"] ",str(QVr[ixn][iyn][izn][4],3,0), "  ommited, \n")    
                 #else                  
                     isosurface{
                       function{VV1( x,y,z,    // internal conversion from real to internal representation
@@ -913,13 +917,13 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
  //    simplified formulation                             //
 //=======================================================//
 #macro DrawInterpolGrdSrf1(_trsh, _dd) // _trsh - isosurface threshold
-#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"),1)   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
 
     #declare _dd3 = pow(_dd,3);
     #local _CellsFound = 0;
     #for(izn,0,dimension_size(QVr,3)-2)
-        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ), 1)    
         #for(iyn,0,dimension_size(QVr,2)-2)
             #for(ixn,0,dimension_size(QVr,1)-2)                               
                 // do not analyze "empty" cells
@@ -951,6 +955,7 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                     ) // do nothing
 //                #debug concat(ttr_ " Cell [", str(ixn,3,0), "Cell [", str(ixn,3,0),"][", str(iyn,3,0),"][",str(izn,3,0),"] ",str(QVr[ixn][iyn][izn][4],3,0), "  ommited, \n")    
                 #else                  
+                    #ifdef(_grd) #undef _grd #end
                     #local _grd = Gradient_Length( // for external gradient
                                            function{ VV1( x,y,z,    // internal conversion from real to internal representation
                                              QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],      // "root" of elementary cell
@@ -969,7 +974,7 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                                              _dd, _dd3)}, 
                                           (<QVr[ixn  ][iyn  ][izn  ][2], QVr[ixn  ][iyn  ][izn  ][3], -QVr[ixn  ][iyn  ][izn  ][1]>+
                                            <QVr[ixn+1][iyn+1][izn+1][2], QVr[ixn+1][iyn+1][izn+1][3], -QVr[ixn+1][iyn+1][izn+1][1]>)/2);
-                    #local _grd = clamp(_grd,0,1);                       
+                    // #local _grd = clamp(_grd,0,1);                       
                                            
                     isosurface{
                       function{VV1( x,y,z,    // internal conversion from real to internal representation
@@ -1003,8 +1008,8 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                       open               
                       // texture{_IsoTexture}
                       texture{
-                         pigment{
-                            function{_ident(x,y,z,_grd)}
+                         pigment{ // function{_ident(x,y,z,_grd)} - identity function
+                            function{ clip(log(_grd -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
                             color_map{_RGBMap}
                          }
                       }
@@ -1013,21 +1018,22 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                 #end
             #end 
         #end 
-        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
-    #end
-#end
+        DebugMsg(concat(str(_CellsFound,10,0), " found to date.\n"), 1)    
+    #end                                                               
+    DebugMsg(concat(str(_CellsFound,10,0), " found in total.\n"), 0)
+#end  // #macro DrawInterpolGrdSrf1()
 
   //======================================================//
  //    Drawing facility gradient implementation per cell //
 //======================================================//
 #macro DrawInterpolGrdSrf(_trsh, _dd) // _trsh - isosurface threshold
-#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
 
     #declare _dd3 = pow(_dd,3);
     #local _CellsFound = 0;
     #for(izn,0,dimension_size(QVr,3)-2)
-        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ), 1)    
         #for(iyn,0,dimension_size(QVr,2)-2)
             #for(ixn,0,dimension_size(QVr,1)-2)                               
                 // do not analyze "empty" cells
@@ -1122,10 +1128,10 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                 #end
             #end 
         #end 
-        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
-    #end
-#end // ## GrdSrf
-
+        DebugMsg(concat(str(_CellsFound,10,0), " found to date.\n"), 1)    
+    #end         
+    DebugMsg(concat(str(_CellsFound,10,0), " found in total.\n"), 0)    
+#end // #macro DrawInterpolGrdSrf( )
 
 // /*   
    //====================================//
@@ -1150,48 +1156,85 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
   )
 } 
 
-#declare VGridGrad = function(
-                        tx, ty, tz,              // tau xP=x/ddd, tau yP=y/ddd, tau zP=z/ddd
-                        _Q000, _Q100, _Q110, _Q010,  // loads //Q(ijk) refers to internal POVRay
-                        _Q001, _Q101, _Q111, _Q011,  // loads 
+#declare VGridGrad = function(                       // elementary cube [1,1,1] at origin is used
+                        tx, ty, tz,                  // txP=y/ddd, tyP=z/ddd, tzP=-x/ddd;
+                        _Q000, _Q100, _Q110, _Q010,  // loads Q(ijk) are placed at internal POVRay
+                        _Q001, _Q101, _Q111, _Q011,  // vertices of unary cube {<0,0,0> <1,1,-1>}
                         _ddd){ 
-// new version
+// algebraic version - corrected
+// tx == yR; ty== zR; tz == -xR
   sqrt(
-      pow(
+      pow( // d/dxp == d/dyr    
            (_Q100-_Q000)*(1-ty)*( -tz)+
            (_Q110-_Q010)*   ty *( -tz)+
            (_Q101-_Q001)*(1-ty)*(1+tz)+
            (_Q111-_Q011)*   ty *(1+tz)
       ,2)+
-      pow(
+      pow( // d/dyp == d/dzr    
            (_Q010-_Q000)*(1-tx)*( -tz)+
            (_Q110-_Q100)*   tx *( -tz)+
            (_Q111-_Q101)*(1-tx)*(1+tz)+
            (_Q011-_Q001)*   tx *(1+tz)
       ,2)+ 
-      pow(
+
+      pow( // d/dzp == -d/dxr    
            (_Q001-_Q000)*(1-tx)*(1-ty)+
            (_Q101-_Q100)*(  tx)*(1-ty)+
            (_Q111-_Q110)*(  tx)*(  ty)+
            (_Q011-_Q010)*(1-tx)*(  ty)
       ,2)  // '1' for testing
-  )/_ddd
+  )  /_ddd //unnecessary
+} 
 
+#declare VAvrgGrad = function(                       // average gradient at the center of elementary cell, 
+                        tx, ty, tz,                  // txP=y/ddd, tyP=z/ddd, tzP=-x/ddd;
+                        _Q000, _Q100, _Q110, _Q010,  // loads Q(ijk) are placed at internal POVRay
+                        _Q001, _Q101, _Q111, _Q011,  // vertices of unary cube {<0,0,0> <1,1,-1>}
+                        _ddd){ 
+// algebraic version - corrected
+// tx == yR; ty== zR; tz == -xR
+  sqrt(
+      pow( // d/dxp 
+           (_Q100-_Q000+_Q110-_Q010+_Q101-_Q001+_Q111-_Q011)
+      ,2)+
+      pow( // d/dyp
+           (_Q010-_Q000+_Q110-_Q100+_Q111-_Q101+_Q011-_Q001)
+      ,2)+ 
+      pow( // d/dzp    
+           (_Q001-_Q000+_Q101-_Q100+_Q111-_Q110+_Q011-_Q010)
+      ,2)  // '1' for testing
+  ) /_ddd/4 
 } 
 
 
-
-  //======================================================//
- //    Drawing facility gradient implementation per cell //
-//======================================================//
-#macro DrawInterpolGrdSrf2(_trsh, _dd) // _trsh - isosurface threshold
-#debug concat("=>dd= ",str(_dd,6,4),"==\n")   
+//[============================================================
+//[     Drawing facility gradient implementation per cell  ==
+//[========================================================
+/****M* Potential.inc/DrawInterpolGrdSrf2 
+* PURPOSE
+*  Draws estimated isosurface of scalar field over the computational grid
+*
+* SYNOPSIS
+*/
+#macro DrawInterpolGrdSrf2(_trsh, _dd) // _trsh - isosurface threshold, _dd - cell of the grid size
+/*
+* INPUTS
+*  _trsh - double   - isosurface threshold fo scalar field
+*  _dd   - double   - distance parameter, _dd > 0.
+*  
+* OUTPUTS
+*  none
+* SEE ALSO
+*  DrawQVBox (),DrawInterpolGrdSrf (),DrawInterpolGrdSrf1 (), DrawInterpolGrdSrf2 (), DrawInterpolGrdSrfSmoothed () 
+*
+******/
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)   
 #declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
 
     #declare _dd3 = pow(_dd,3);
     #local _CellsFound = 0;
     #for(izn,0,dimension_size(QVr,3)-2)
-        #debug concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ )    
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ), 1)    
         #for(iyn,0,dimension_size(QVr,2)-2)
             #for(ixn,0,dimension_size(QVr,1)-2)                               
                 // do not analyze "empty" cells
@@ -1255,8 +1298,9 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                       // texture{_IsoTexture}
                       texture{
                          pigment{ // 
-                            function{ clip(log(
-                                 VGridGrad(x,y,z, 
+                            function{ clip(
+                                 // log(
+                                 (VGridGrad(x,y,z, 
                                     // POVRay's -> Q000, Q100, Q110, Q010,
                                     QVr[ixn+1][iyn  ][izn  ][0],   
                                     QVr[ixn+1][iyn+1][izn  ][0],   
@@ -1268,8 +1312,11 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                                     QVr[ixn  ][iyn+1][izn  ][0],  
                                     QVr[ixn  ][iyn+1][izn+1][0], 
                                     QVr[ixn  ][iyn  ][izn+1][0],
-                                   _dd 
-                                 ) -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
+                                   _dd // scaling by _dd is neccessary, though (leftover from derivative: (d/dx)(1-x/_dd).
+                                 )-_gMin)/(_gMax-_gMin), 0, 1) } 
+                                 //) , 0, 
+                                 //log(_gMax-_gMin+.0001))/log(_gMax-_gMin+.0001) }           
+                                 // -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
                             color_map{_RGBMap}
                          }
                          finish{ scDullMirror }
@@ -1281,13 +1328,884 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
                 #end
             #end 
         #end 
-        #debug concat(str(_CellsFound,10,0), " found to date.\n")    
-    #end
-#end // ## ...GrdSrf2
+        DebugMsg(concat(str(_CellsFound,10,0), " found to date.\n"), 1)    
+    #end                                                             
+    DebugMsg(concat(str(_CellsFound,10,0), " found in total.\n"), 0)    
+#end // #macro DrawInterpolGrdSrf2()
+
+//[============================================================
+//[     Drawing facility gradient implementation per cell  ==
+//[========================================================
+/****M* Potential.inc/DrawInterpolGrdSrf3 
+* PURPOSE
+*  Draws estimated isosurface of scalar field over the computational grid
+*  gradient is average at the center of the cell
+*
+* SYNOPSIS
+*/
+#macro DrawInterpolGrdSrf3(_trsh, _dd) // _trsh - isosurface threshold, _dd - cell of the grid size
+/*
+* INPUTS
+*  _trsh - double   - isosurface threshold fo scalar field
+*  _dd   - double   - distance parameter, _dd > 0.
+*  
+* OUTPUTS
+*  none
+* SEE ALSO
+*  DrawQVBox (),DrawInterpolGrdSrf (),DrawInterpolGrdSrf1 (), DrawInterpolGrdSrf2 (), DrawInterpolGrdSrfSmoothed () 
+*
+******/
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)   
+#declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
+
+    #declare _dd3 = pow(_dd,3);
+    #local _CellsFound = 0;
+    #for(izn,0,dimension_size(QVr,3)-2)
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ), 1)    
+        #for(iyn,0,dimension_size(QVr,2)-2)
+            #for(ixn,0,dimension_size(QVr,1)-2)                               
+                // do not analyze "empty" cells
+                #if (_trsh<min(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                           ) 
+                    | _trsh>max(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                            )      
+                     |  (QVr[ixn][iyn][izn][4])     
+                    ) // do nothing
+
+                #else        
+                    isosurface{
+                      function{VGrid( x, y, z,    // internal conversion from real to internal representation
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                                    ) 
+                      }               
+                      contained_by{ 
+                            box{
+                                 <0, 0, -1>,     // "root" of elementary cell >,
+                                 <1, 1,  0>      // "root" of elementary cell
+                            }
+                      }
+                      threshold _trsh
+                      accuracy _Accur 
+                      all_intersections
+                      max_gradient _MaxG ///1.1  
+                      evaluate _MaxG*.7, sqrt(1/.7), .7  //.1, 1.4, .7
+                      open               
+                      // texture{_IsoTexture}
+                      texture{
+                         pigment{ // 
+                            function{ clip(
+                                 // log(
+                                 (VAvrgGrad(x,y,z, 
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0],
+                                   _dd // scaling by _dd is neccessary, though (leftover from derivative: (d/dx)(1-x/_dd).
+                                 )-_gMin)/(_gMax-_gMin), 0, 1) } 
+                                 //) , 0, 
+                                 //log(_gMax-_gMin+.0001))/log(_gMax-_gMin+.0001) }           
+                                 // -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
+                            color_map{_RGBMap}
+                         }
+                         finish{ scDullMirror }
+                      }                                                                               
+                      scale _dd
+                      translate <QVr[ixn  ][iyn][izn][2], QVr[ixn  ][iyn][izn][3], -QVr[ixn  ][iyn][izn][1]>      // "root" of elementary cell
+                    }      
+                    #local _CellsFound = _CellsFound+1;
+                #end
+            #end 
+        #end 
+        DebugMsg(concat(str(_CellsFound,10,0), " found to date.\n"), 1)    
+    #end                                                             
+    DebugMsg(concat(str(_CellsFound,10,0), " found in total.\n"), 0)    
+#end // #macro DrawInterpolGrdSrf3()
 
 
 
-             
+/****M* Potential.inc/ComputeGridGradient
+* PURPOSE
+*  Based on values of scalar field distributed over 3D grid, Nx*Ny*Nz nodes stored in 
+*  GLOBAL QVr[Nx][Ny][Nz][5] array, computes 3D grid of equal size and extent 
+*  containing values of (last index):
+*  ..[0] - value of estimated gradient (ie. length of the gradient vector)
+*  ..[1][2][3] - estimated components of the gradient vector: g_i = (v_(i+1)-v_(i-1))/(2d)   
+*  ..[4] - control firld, not used yet.                      
+*  produces array GVr[Nx][Ny][Nz][5].
+*
+* SYNOPSIS
+*/
+#macro ComputeGridGradient() 
+/*
+* INPUTS
+*  QVr - garray, global.
+* OUTPUTS
+*  GVr - garray, global.
+* SEE ALSO
+*  VGrid (), VGridGrad (), DrawInterpolGrdSrfSmoothed (), DrawInterpolGrdSrf (), DrawInterpolGrdSrf1 (), DrawInterpolGrdSrf2 ()
+*
+******/
+    DebugMsg( "Allocating internal Gradient array\n", 1)
+    #ifndef (QVr)
+      DebugMsg("Compute QVr[Nx][Ny][Nz][5] array first!\n",0)
+      #local _halt = _QVr[0][0][0][0];
+    #end  
+    
+    #declare GVr = array[dimension_size(QVr,1)]
+                        [dimension_size(QVr,2)]
+                        [dimension_size(QVr,3)][5]; // gradient VALUE [0] and vector ([1,2,3], [4] unused)!  
+//    #declare GVr = array[_Nx][_Ny][_Nz][5]; // gradient VALUE [0] and vector ([1,2,3], [4] unused)!  
+    
+
+    #local  gTmp = 0.0;  // safety :[    
+    //==============    
+    // 0) 8 vertices                                 
+    // 0_000/1
+    DebugMsg(concat("processing vertice: 0-0-0\n"), 1)
+    #local in1 = 0;
+    #local in2 = 0;
+    #local in3 = 0;
+    // real coordinates!!
+    #local _gx = (QVr[    1][    0][    0][0] - QVr[    0][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][    1][    0][0] - QVr[    0][    0][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][    1][0] - QVr[    0][    0][    0][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED 
+    #local _Gmin = gTmp;  // 
+    #local _Gmax = 0.0;   // <-as vector length canot be less than zero.
+    #local MinMaxSet = false; // safety
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+
+    // 0_111/2
+    DebugMsg(concat("processing vertice: 1-1-1\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in2 = dimension_size(GVr,2)-1; 
+    #local in3 = dimension_size(GVr,3)-1; 
+    // real coordinates!!
+    #local _gx = (QVr[in1  ][    0][    0][0] - QVr[in1-1][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][in2  ][    0][0] - QVr[    0][in2-1][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][in3  ][0] - QVr[    0][    0][in3-1][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+                                
+    // 0_011/3
+    DebugMsg(concat("processing vertice: 0-1-1\n"),1)
+    #local in1 = 0;
+    #local in2 = dimension_size(GVr,2)-1; 
+    #local in3 = dimension_size(GVr,3)-1; 
+    // real coordinates!!
+    #local _gx = (QVr[in1+1][    0][    0][0] - QVr[in1  ][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][in2  ][    0][0] - QVr[    0][in2-1][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][in3  ][0] - QVr[    0][    0][in3-1][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+
+    // 0_101/4
+    DebugMsg(concat("processing vertice: 1-0-1\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in2 = 0; 
+    #local in3 = dimension_size(GVr,3)-1; 
+    // real coordinates!!
+    #local _gx = (QVr[in1  ][    0][    0][0] - QVr[in1-1][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][in2+1][    0][0] - QVr[    0][in2  ][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][in3  ][0] - QVr[    0][    0][in3-1][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+
+    // 0_110/5
+    DebugMsg(concat("processing vertice: 1-1-0\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in2 = dimension_size(GVr,2)-1; 
+    #local in3 = 0; 
+    // real coordinates!!
+    #local _gx = (QVr[in1  ][    0][    0][0] - QVr[in1-1][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][in2  ][    0][0] - QVr[    0][in2-1][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][in3+1][0] - QVr[    0][    0][in3  ][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end                       
+    
+    // 0_100/6
+    DebugMsg(concat("processing vertice: 1-0-0\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;; // 0;
+    #local in2 = 0;
+    #local in3 = 0; // dimension_size(GVr,3)-1; 
+    // real coordinates!!
+    #local _gx = (QVr[in1  ][    0][    0][0] - QVr[in1-1][    0][    0][0])/ dd; 
+    #local _gy = (QVr[    0][in2+1][    0][0] - QVr[    0][in2  ][    0][0])/ dd; 
+    #local _gz = (QVr[    0][    0][in3+1][0] - QVr[    0][    0][in3  ][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    
+    // 0_010/7
+    DebugMsg(concat("processing vertice: 0-1-0\n"), 1)
+    #local in1 = 0;
+    #local in2 = dimension_size(GVr,2)-1; 
+    #local in3 = 0; 
+    // real coordinates!!
+    #local _gx = (QVr[in1+1][    0][in3  ][0] - QVr[in1  ][in2  ][in3  ][0])/ dd; 
+    #local _gy = (QVr[in1  ][in2  ][in3  ][0] - QVr[    0][in2-1][in3  ][0])/ dd; 
+    #local _gz = (QVr[in1  ][    0][in3+1][0] - QVr[    0][in2  ][in3  ][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+
+    // 0_001/8
+    DebugMsg(concat("processing vertice: 0-0-1\n"), 1)
+    #local in1 = 0;
+    #local in2 = 0;
+    #local in3 = dimension_size(GVr,3)-1;  
+    // real coordinates!!
+    #local _gx = (QVr[in1+1][    0][in3  ][0] - QVr[in1  ][in2  ][in3  ][0])/ dd; 
+    #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2  ][in3  ][0])/ dd; 
+    #local _gz = (QVr[in1  ][    0][in3  ][0] - QVr[in1  ][in2  ][in3-1][0])/ dd; 
+    #local gTmp = vlength(<_gx, _gy, _gz>);
+    #declare GVr[in1][in2][in3][0] = gTmp;
+    #declare GVr[in1][in2][in3][1] = _gx;
+    #declare GVr[in1][in2][in3][2] = _gy;
+    #declare GVr[in1][in2][in3][3] = _gz;
+    #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+    
+    #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+    #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    DebugMsg(concat("After vertices: Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)    
+///////////
+    
+    DebugMsg("INTERN CLUSTER OF NODES (ie. no vertices - done above - walls and edges).", 1)
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+       #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
+          #for(in3,1,dimension_size(GVr,3)-2) // z axis first
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; // double 'dd'
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; // double 'dd'
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) 
+                   #local _Gmin = gTmp; 
+                   DebugMsg(concat("\n==\nin1=",str(in1,2,0), "; in2=",str(in2,2,0), "; in3=", str(in3,2,0),"\n"), 2)
+                   DebugMsg(concat("gx=",str(_gx,14,10), "; gy=",str(_gy,14,10), "; gz=", str(_gz,14,10),"; grd=", str(gTmp,10,5),"\n==\n"), 2)
+                #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+             #end
+       #end
+       DebugMsg(concat("processing: ", str(in1, 4,0)," core gradient X layer \n"), 2)
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    DebugMsg("  Horizontal walls X-Y:", 1)
+    // 2a) XY - horizontal walls/lower, Z = const                            
+    DebugMsg(concat("processing: X-Y lower wall\n"), 1)
+    #local in3 = 0;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+       #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; // double 'dd'
+                #local _gz = (QVr[in1  ][in2  ][    1][0] - QVr[in1  ][in2  ][    0][0])/ dd;
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 2b) XY - horizontal walls/upper, Z = const                            
+    DebugMsg(concat("processing: X-Y upper wall\n"), 1)
+    #local in3 = dimension_size(GVr,3)-1;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+       #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; // double 'dd'
+                #local _gz = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2  ][in3-1][0])/ dd;
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // vertical walls X-Z:
+    // 3a) XZ - vertical walls/origin, Y=const                            
+    DebugMsg(concat("processing: X-Z origin wall\n"), 1)
+    #local in2 = 0;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+       #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][    1][in3  ][0] - QVr[in1  ][    0][in3  ][0])/ dd;
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; // double 'dd'
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 3b) XZ - vertical walls/distant, Y=const                                                        
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in2 = dimension_size(GVr,2)-1;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+       #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/ dd;
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; // double 'dd'
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // vertical walls Y-Z:
+    // 3a) YZ - vertical walls/origin, X=const                            
+    DebugMsg( concat("processing: X-Z origin wall\n", "Debug Test\n==\n"), 1)
+    #local in1 = 0;
+    #for(in2,1,dimension_size(GVr,2)-2)       // x axis last
+       #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[    1][in2  ][in3  ][0] - QVr[    0][in2  ][in3  ][0])/ dd;
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; // double 'dd'
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; // double 'dd'
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end                                            
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 3b) YZ - vertical walls/distant, X=const                                                        
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #for(in2,1,dimension_size(GVr,2)-2)       // x axis last
+       #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
+                // real coordinates!!
+                #local _gx = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/ dd;
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; // double 'dd'
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; // double 'dd'
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+       #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4) 12 edges        
+    // 4x,1) along X axis Y==0; Z==0;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in2 = 0;
+    #local in3 = 0;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][    1][    0][0] - QVr[in1  ][    0][    0][0])/ dd; 
+                #local _gz = (QVr[in1  ][    0][    1][0] - QVr[in1  ][    0][    0][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4x,2) along X axis, Y==max; Z==max;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in2 = dimension_size(GVr,2)-1;
+    #local in3 = dimension_size(GVr,3)-1;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/ dd; 
+                #local _gz = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2  ][in3-1][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4x,3) along X axis, Y==max; Z==0;
+    DebugMsg( concat("processing: X-Y distant wall\n"), 1)
+    #local in2 = dimension_size(GVr,2)-1;
+    #local in3 = 0;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/ dd; 
+                #local _gz = (QVr[in1  ][in2  ][    1][0] - QVr[in1  ][in2  ][    0][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4x,4) along X axis, Y==0; Z==max;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in2 = 0;
+    #local in3 = dimension_size(GVr,3)-1;
+    #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
+                // real coordinates!!
+                #local _gx = (QVr[in1+1][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/dd2; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2  ][in3  ][0])/ dd; 
+                #local _gz = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2  ][in3-1][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4y,1) along Y axis X==0; Z==0;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = 0;
+    #local in3 = 0;
+    #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis 
+                // real coordinates!!
+                #local _gx = (QVr[    1][in2  ][    0][0] - QVr[    0][in2  ][    0][0])/ dd; // double 'dd'
+                #local _gy = (QVr[    0][in2+1][    0][0] - QVr[    0][in2-1][    0][0])/dd2; 
+                #local _gz = (QVr[    0][in2  ][    1][0] - QVr[    0][in2  ][    0][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4y,2) along Y axis, X==max; Z==max;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in3 = dimension_size(GVr,3)-1;
+    #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis 
+                // real coordinates!!
+                #local _gx = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; 
+                #local _gz = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2  ][in3-1][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4y,3) along Y axis, X==max; Z==0;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in3 = 0;
+    #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis
+                // real coordinates!!
+                #local _gx = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/dd2; 
+                #local _gz = (QVr[in1  ][in2  ][    1][0] - QVr[in1  ][in2  ][    0][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = vTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = vTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4y,4) along Y axis, X==0; Z==max;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = 0;
+    #local in3 = dimension_size(GVr,3)-1;
+    #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis
+                // real coordinates!!
+                #local _gx = (QVr[    1][in2  ][in3  ][0] - QVr[    0][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[    0][in2  ][in3  ][0] - QVr[    0][in2-1][in3  ][0])/dd2; 
+                #local _gz = (QVr[    0][in2  ][in3  ][0] - QVr[    0][in2  ][in3-1][0])/ dd; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    //===========
+    // 4z,1) along Z axis X==0; Y==0;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = 0;
+    #local in2 = 0;
+    #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis 
+                // real coordinates!!
+                #local _gx = (QVr[    1][    0][in3  ][0] - QVr[    0][    0][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[    0][    1][in3  ][0] - QVr[    0][    0][in3  ][0])/ dd; 
+                #local _gz = (QVr[    0][    0][in3+1][0] - QVr[    0][    0][in3-1][0])/dd2; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4z,2) along Z axis, X==max; Y==max;
+    // #debug concat("processing: X-Y distant wall\n")
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in2 = dimension_size(GVr,2)-1;
+    #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis 
+                // real coordinates!!
+                #local _gx = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1  ][in2-1][in3  ][0])/ dd; 
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4z,3) along Z axis, X==max; Y==0;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = dimension_size(GVr,1)-1;
+    #local in2 = 0;
+    #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis
+                // real coordinates!!
+                #local _gx = (QVr[in1  ][in2  ][in3  ][0] - QVr[in1-1][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[in1  ][in2+1][in3  ][0] - QVr[in1  ][in2  ][in3  ][0])/ dd; 
+                #local _gz = (QVr[in1  ][in2  ][in3+1][0] - QVr[in1  ][in2  ][in3-1][0])/dd2; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    
+    // 4z,4) along Z axis, X==0; Y==max;
+    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    #local in1 = 0;
+    #local in2 = dimension_size(GVr,2)-1;
+    #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis
+                // real coordinates!!
+                #local _gx = (QVr[    1][in2  ][in3  ][0] - QVr[    0][in2  ][in3  ][0])/ dd; // double 'dd'
+                #local _gy = (QVr[    0][in2  ][in3  ][0] - QVr[    0][in2-1][in3  ][0])/ dd; 
+                #local _gz = (QVr[    0][in2  ][in3+1][0] - QVr[    0][in2  ][in3-1][0])/dd2; 
+                #local gTmp = vlength(<_gx, _gy, _gz>);
+                #declare GVr[in1][in2][in3][0] = gTmp;
+                #declare GVr[in1][in2][in3][1] = _gx;
+                #declare GVr[in1][in2][in3][2] = _gy;
+                #declare GVr[in1][in2][in3][3] = _gz;
+                #declare GVr[in1][in2][in3][4] = 0; // UNUSED
+                
+                #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
+                #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
+    #end   
+    DebugMsg(concat("Finally: Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 0)
+    
+    #if (Debug>0) 
+        DebugMsg(concat("Debugging level:",str(Debug,3,0),"\n"), 0)
+        #for(in1,0,dimension_size(GVr,1)-1)       // x axis last
+           #for(in2,0,dimension_size(GVr,2)-1)    // y axis 2nd
+              #for(in3,0,dimension_size(GVr,3)-1) // z axis first
+                 #debug concat("in1=",str(in1,2,0), "; in2=",str(in2,2,0), "; in3=", str(in3,2,0),"; grd=", str(GVr[in1][in2][in3][0],10,5),"\n")
+              #end
+           #end
+        #end 
+    #end                                           
+    #declare GradMin = _Gmin;
+    #declare GradMax = _Gmin;
+#end // #macro ComputeGridGradient()
+
+
+  //======================================================//
+ //    Drawing facility gradient implementation per cell //
+//======================================================//
+/****M* Potential.inc/DrawInterpolGrdSrfSmoothed
+* PURPOSE
+*  Isosurface with smoothed gradient
+* SYNOPSIS
+*/
+#macro DrawInterpolGrdSrfSmoothed(_trsh, _dd) // _trsh - isosurface threshold
+/*
+* INPUTS
+*  _trsh - double - threshold of scalar field;
+*  _dd   - 3D cell size (cell is assumed cubic);
+* OUTPUTS
+*  renders image
+* SEE ALSO
+*  DrawInterpolGrdSrf (), DrawInterpolGrdSrf1 (), DrawInterpolGrdSrf2 ()
+*
+******/
+DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)   
+#declare ttr_ = concat(" Trsh= ", str(_trsh,6,4));   
+
+    #declare _dd3 = pow(_dd,3);
+    #local _CellsFound = 0;
+    #for(izn,0,dimension_size(QVr,3)-2)
+        DebugMsg(concat(" Processing layer.. [", str(izn,3,0) "] by treshold", ttr_ ), 1)    
+        #for(iyn,0,dimension_size(QVr,2)-2)
+            #for(ixn,0,dimension_size(QVr,1)-2)                               
+                // do not analyze "empty" cells
+                #if (_trsh<min(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                           ) 
+                    | _trsh>max(
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                            )      
+                     |  (QVr[ixn][iyn][izn][4])     
+                    ) // do nothing
+
+                #else                                   
+                    isosurface{
+                      function{VGrid( x, y, z,    // internal conversion from real to internal representation
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    QVr[ixn+1][iyn  ][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn  ][0],   
+                                    QVr[ixn+1][iyn+1][izn+1][0],   
+                                    QVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    QVr[ixn  ][iyn  ][izn  ][0], 
+                                    QVr[ixn  ][iyn+1][izn  ][0],  
+                                    QVr[ixn  ][iyn+1][izn+1][0], 
+                                    QVr[ixn  ][iyn  ][izn+1][0]
+                                    ) 
+                      }               
+                      contained_by{ 
+                            box{
+                                 <0, 0, -1>,     // "root" of elementary cell >,
+                                 <1, 1,  0>      // "root" of elementary cell
+                            }
+                      }
+                      threshold _trsh
+                      accuracy _Accur 
+                      all_intersections
+                      max_gradient _MaxG ///1.1  
+                      evaluate _MaxG*.7, sqrt(1/.7), .7  //.1, 1.4, .7
+                      open               
+                      // texture{_IsoTexture}
+                      texture{
+                         pigment{ // 
+                            function{ clip(log(
+                              VGrid( x, y, z,    // internal conversion from real to internal representation
+                                    // POVRay's -> Q000, Q100, Q110, Q010,
+                                    GVr[ixn+1][iyn  ][izn  ][0],   
+                                    GVr[ixn+1][iyn+1][izn  ][0],   
+                                    GVr[ixn+1][iyn+1][izn+1][0],   
+                                    GVr[ixn+1][iyn  ][izn+1][0],   
+                                    
+                                    // POVRay's -> Q001, Q101, Q111, Q011, 
+                                    GVr[ixn  ][iyn  ][izn  ][0], 
+                                    GVr[ixn  ][iyn+1][izn  ][0],  
+                                    GVr[ixn  ][iyn+1][izn+1][0], 
+                                    GVr[ixn  ][iyn  ][izn+1][0]
+                                    ) -_gMin+1), 0, log(_gMax-_gMin+1))/log(_gMax-_gMin+1) }           
+                            color_map{_RGBMap}
+                         }
+                         finish{ scDullMirror }
+                      }                                                                               
+                      scale _dd
+                      translate <QVr[ixn  ][iyn][izn][2], QVr[ixn  ][iyn][izn][3], -QVr[ixn  ][iyn][izn][1]>      // "root" of elementary cell
+                    }      
+                    #local _CellsFound = _CellsFound+1;
+                #end
+            #end 
+        #end 
+        DebugMsg(concat(str(_CellsFound,10,0), " found to date.\n"), 1)    
+    #end                                                               
+    DebugMsg(concat(str(_CellsFound,10,0), " found in total.\n"), 0)
+#end // #macro DrawInterpolGrdSrfSmoothed()
+
 // private macros 
 #macro _fmx() (  -pow((xx-rx)/_d,3) +2 *pow((xx-rx)/_d, 2) - (xx-rx)/_d) #end // Q_m_    
 #macro _f0x() ( 3*pow((xx-rx)/_d,3) -5 *pow((xx-rx)/_d, 2) + 2)          #end // Q_0_
@@ -2827,8 +3745,13 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
 
-
-#end // ...#ifndef Potential_INC
+#else
+ DebugMsg("Module Potential recalled\n",1)
+ #ifndef (_CallStack )
+   #declare _CallStack = "Call stack:\n"  
+ #end
+ #declare _CallStack = concat(_CallStack, _ModuleDescription,"\n")
+#end // ...#ifndef _Potential_INC
 // brutal reserve
 //                        InterCubic( x,y,z,    // conversion from real to internal representation
 //                                    QVr[ixn][iyn][izn][2], QVr[ixn][iyn][izn][3], -QVr[ixn][iyn][izn][1],  // float real "root" of elementary cell

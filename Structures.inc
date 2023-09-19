@@ -9,7 +9,7 @@
 *
 *    |html <hr width=50% align="left">
 * VERSION
-*  4.0.3, tested on PovRay 3.7.
+*  4.0.4, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -29,16 +29,17 @@
 *  2018-02-18/4.0.1 - corections in documentation
 *  2019-02-20/4.0.2 - texture handling for atoms and bonds
 *  2019-03-19/4.0.3 - minor corrections in doc
+*  2021-09-14/4.0.4 - cleanup for POV-Ray 3.8
 ****
   end of RoboDoc comment
 ****/
 
-#version 3.7;
+#version version;
 #ifndef(Structures_INC)
-#declare Structures_INC = "2019-02-20"; // last editing date
+#declare Structures_INC = "2021-09-14"; // last editing date
 
 #declare _FileName   = "Structures.inc";
-#declare _FileVerMaj = "4.0.1";
+#declare _FileVerMaj = "4.0.4";
 #declare _FileVerMin = Structures_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -265,7 +266,8 @@
 
 
 // additional every single atom/bondage zoom >0, no DISTANCE is changed!
-#declare _mzoom = 1; #macro SetMoleculeZoom(_ZM) #declare _mzoom=_ZM; #end
+#declare _mzoom = 1; 
+#macro SetMoleculeZoom(_ZM) #declare _mzoom=_ZM; #end
 
 /****f* Structures.inc/ArMerge
 * PURPOSE
@@ -441,12 +443,12 @@
      cylinder{<_PTs[_BNs[i][0]][1], _PTs[_BNs[i][0]][2], _PTs[_BNs[i][0]][3]>,
               <_PTs[_BNs[i][1]][1], _PTs[_BNs[i][1]][2], _PTs[_BNs[i][1]][3]>,
                 #switch(_BNs[i][2])                                              // bondage type
-                    #case(0)     _mzoom*_D texture{ pigment{color         Silver/2} finish{Dull}} #break; // "normal"
+                    #case(0)     _mzoom*_D texture{ pigment{color            Silver/2} finish{Dull}} #break; // "normal"
                     #case(1) 1.5*_mzoom*_D texture{ pigment{color          Maroon/1.2} finish{Dull}} #break; // "double normal"
-                    #case(2) 2.0*_mzoom*_D texture{ pigment{color           Green/3} finish{Dull}} #break; // "ionic"
-                    #case(3) 1.3*_mzoom*_D texture{ pigment{color rgb <0.0,.5,.5,0>} finish{Dull}} #break; // "hydrogen bond"
-                    #case(4) 1.3*_mzoom*_D texture{ pigment{color rgb 0.7*<1.0,.0,.0,0>} finish{Dull}} #break; // "testing"
-                    #else        _mzoom*_D texture{ pigment{color            Silver} finish{Dull}} #break; // ...and so on ;)
+                    #case(2) 2.0*_mzoom*_D texture{ pigment{color             Green/3} finish{Dull}} #break; // "ionic"
+                    #case(3) 1.3*_mzoom*_D texture{ pigment{color rgb     <0.0,.5,.5>} finish{Dull}} #break; // "hydrogen bond"
+                    #case(4) 1.3*_mzoom*_D texture{ pigment{color rgb 0.7*<1.0,.0,.0>} finish{Dull}} #break; // "testing"
+                    #else        _mzoom*_D texture{ pigment{color              Silver} finish{Dull}} #break; // ...and so on ;)
                 #end
      }
   #end

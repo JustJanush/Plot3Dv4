@@ -19,17 +19,19 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a‚a Ph.D.
 *  AGH University of Science and Technology
+* HISTORY
+*  2023-08-22 - minor correction in PeriodicTabale base (element [0][0] changed from '9' to '22')
 *
 ****
   end of RoboDoc comment
 ****/
 
 #ifndef(PeriodicTable_INC)
-#declare PeriodicTable_INC = "2018-09-17";
+#declare PeriodicTable_INC = "2023-08-22";
 #version 3.7;
 
 #local _FileName   = "PeriodicTable.INC";
-#local _FileVerMaj = "4.0.0";
+#local _FileVerMaj = "4.0.1";
 #local _FileVerMin = PeriodicTable_INC;
 #debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
 
@@ -47,7 +49,7 @@
 #declare PeriodicTable = array[_NElements+1][6]{ 
    // R,  R_VdWalls, LJ eps,  Hue,  Sat,   Lumia -- all these values may be overridden on demand of course
    //                                               TODO: if Hue<0 it refers to the "materials" table
-    {   9,  1.00,     1.000,    0,  0.0,   0.0} // number of elements in the table ;)
+    {  22,  1.00,     1.000,    0,  0.0,   0.0} // number of elements in the table ;)
    ,{0.31,  1.20,     1.000,    0,  0.0,   0.8} //  1  H - hydrogen 
    ,{0.28,  1.40,     1.000,    0,  1.0,   0.5} //  2 He - helium
    ,{1.28,  1.82,     1.000,    0,  1.0,   0.5} //  3 Li - lithium
