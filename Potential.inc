@@ -8,7 +8,7 @@
 *   Fig.[Potential] Examples of visualisation of coulombean potential around the water molecule
 *   |html <hr width=50% align="left">        
 * VERSION
-*  4.0.0, tested on PovRay 3.7.
+*  4.0.3, tested on PovRay 3.7.
 * AUTHOR
 *  Janusz Opi³a Ph.D.
 *   jmo{at}agh.edu.pl, janusz.opila{at}gmail.com
@@ -22,26 +22,28 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
-* HISTORY 
-*  2023-08-30, correction of debugging levels, CommonDefs.DebugMsg() added  
-*              many enhancements, added: DrawInterpolGrdSrfSmoothed() and ComputeGridGradient()
-*              from now gradient value is interpolated using full trilinear implementation
+* HISTORY            
 *  2016-01-05 - Tricubic interpolation, KDE interpolation;
 *  2016-02-03 - inserted procedures for isosurface interpolation;
 *  2023-08-23 - DrawInterpolGrdSrfSmoothed added(), documentation improved;
+*  2023-08-30 - correction of debugging levels, CommonDefs.DebugMsg() added  
+*               many enhancements, added: DrawInterpolGrdSrfSmoothed() and ComputeGridGradient()
+*               from now gradient value is interpolated using full trilinear implementation
+*  2023-09-27 - minor documentation improvement;
 ****
   end of RoboDoc comment
 ****/
 
-#version 3.7;
+#version version;
 #ifndef(_Potential_INC)
-#declare _Potential_INC = "2023-09-15"; // last editing date        
+#declare _Potential_INC = "2023-09-27"; // last edition date        
 
 #declare _FileName   = "Potential.inc";
-#declare _FileVerMaj = "4.0.1";
-#declare _FileVerMin = _Potential_INC;
-#local _ModuleDescription = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
-#debug _ModuleDescription;
+#declare _FileVerMaj = "4.0.3";
+#declare _FileVerMin = _Potential_INC;     
+
+#declare _ModuleDescription_Pote = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Pote
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;
@@ -310,9 +312,10 @@
 
 /****M* Potential.inc/CreateVFC
 * PURPOSE
-*  Coulombean potential from network of electric charges.
+*  Makes function computing coulombean potential from network of electric charges.
 *  Results are computed in [V], for distance given in Angstrems, 
 *  and charge given in 'e' units.
+*  exemplary use: #declare ExampleFun = CreateVFC( table )
 * SYNOPSIS
 */
 #macro CreateVFC(_PTs) // 
@@ -337,9 +340,10 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
 
 /****M* Potential.inc/CreateVFC2
 * PURPOSE
-*  Coulombean potential from network of electric charges.
+*  Makes function computing coulombean potential from network of electric charges.
 *  Results are computed in [V], for distance given in Angstrems, 
-*  and charge given in 'e' units.
+*  and charge given in 'e' units. 
+*  exemplary use: #declare ExampleFun = CreateVFC2( table, 1.0)
 * SYNOPSIS
 */
 #macro CreateVFC2(_PTs, _ff) // Coulombean potential from network of electric charges
@@ -355,7 +359,7 @@ function(x,y,z){ // use: #declare VVV = CreateVFC( table)
 *
 ******/
 #debug concat("result is given in ", str(qeff,17,11)," [",str(1/_ff,17,11),"*V] \n")
-function(x,y,z){ // use: #declare VVV = CreateVFC( table)
+function(x,y,z){ // use: #declare VVV = CreateVFC2( table, coeeficient)
   _ff*qeff*(_PTs[1][0]/sqrt(pow(x-_PTs[1][1],2) + pow(y-_PTs[1][2],2) + pow(z-_PTs[1][3],2))
   #for(i, 2, _PTs[0][0]) 
      + _PTs[i][0]/sqrt(pow(x-_PTs[i][1],2) + pow(y-_PTs[i][2],2) + pow(z-_PTs[i][3],2))
@@ -1484,9 +1488,9 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
 *  VGrid (), VGridGrad (), DrawInterpolGrdSrfSmoothed (), DrawInterpolGrdSrf (), DrawInterpolGrdSrf1 (), DrawInterpolGrdSrf2 ()
 *
 ******/
-    DebugMsg( "Allocating internal Gradient array\n", 1)
+    DebugMsg( "Allocating internal Gradient array\n", 2)
     #ifndef (QVr)
-      DebugMsg("Compute QVr[Nx][Ny][Nz][5] array first!\n",0)
+      DebugMsg("Compute QVr[Nx][Ny][Nz][5] array first!\n", 2)
       #local _halt = _QVr[0][0][0][0];
     #end  
     
@@ -1500,7 +1504,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     //==============    
     // 0) 8 vertices                                 
     // 0_000/1
-    DebugMsg(concat("processing vertice: 0-0-0\n"), 1)
+    DebugMsg(concat("processing vertice: 0-0-0\n"), 2)
     #local in1 = 0;
     #local in2 = 0;
     #local in3 = 0;
@@ -1522,7 +1526,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
 
     // 0_111/2
-    DebugMsg(concat("processing vertice: 1-1-1\n"), 1)
+    DebugMsg(concat("processing vertice: 1-1-1\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in2 = dimension_size(GVr,2)-1; 
     #local in3 = dimension_size(GVr,3)-1; 
@@ -1541,7 +1545,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
                                 
     // 0_011/3
-    DebugMsg(concat("processing vertice: 0-1-1\n"),1)
+    DebugMsg(concat("processing vertice: 0-1-1\n"), 2)
     #local in1 = 0;
     #local in2 = dimension_size(GVr,2)-1; 
     #local in3 = dimension_size(GVr,3)-1; 
@@ -1560,7 +1564,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
 
     // 0_101/4
-    DebugMsg(concat("processing vertice: 1-0-1\n"), 1)
+    DebugMsg(concat("processing vertice: 1-0-1\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in2 = 0; 
     #local in3 = dimension_size(GVr,3)-1; 
@@ -1579,7 +1583,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
 
     // 0_110/5
-    DebugMsg(concat("processing vertice: 1-1-0\n"), 1)
+    DebugMsg(concat("processing vertice: 1-1-0\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in2 = dimension_size(GVr,2)-1; 
     #local in3 = 0; 
@@ -1598,7 +1602,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end                       
     
     // 0_100/6
-    DebugMsg(concat("processing vertice: 1-0-0\n"), 1)
+    DebugMsg(concat("processing vertice: 1-0-0\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;; // 0;
     #local in2 = 0;
     #local in3 = 0; // dimension_size(GVr,3)-1; 
@@ -1617,7 +1621,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     
     // 0_010/7
-    DebugMsg(concat("processing vertice: 0-1-0\n"), 1)
+    DebugMsg(concat("processing vertice: 0-1-0\n"), 2)
     #local in1 = 0;
     #local in2 = dimension_size(GVr,2)-1; 
     #local in3 = 0; 
@@ -1636,7 +1640,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
 
     // 0_001/8
-    DebugMsg(concat("processing vertice: 0-0-1\n"), 1)
+    DebugMsg(concat("processing vertice: 0-0-1\n"), 2)
     #local in1 = 0;
     #local in2 = 0;
     #local in3 = dimension_size(GVr,3)-1;  
@@ -1653,10 +1657,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     
     #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
     #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
-    DebugMsg(concat("After vertices: Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)    
+    DebugMsg(concat("After vertices: Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)    
 ///////////
     
-    DebugMsg("INTERN CLUSTER OF NODES (ie. no vertices - done above - walls and edges).", 1)
+    DebugMsg("INTERN CLUSTER OF NODES (ie. no vertices - done above - walls and edges).", 2)
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
        #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
           #for(in3,1,dimension_size(GVr,3)-2) // z axis first
@@ -1681,11 +1685,11 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
        #end
        DebugMsg(concat("processing: ", str(in1, 4,0)," core gradient X layer \n"), 2)
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
-    DebugMsg("  Horizontal walls X-Y:", 1)
+    DebugMsg("  Horizontal walls X-Y:", 2)
     // 2a) XY - horizontal walls/lower, Z = const                            
-    DebugMsg(concat("processing: X-Y lower wall\n"), 1)
+    DebugMsg(concat("processing: X-Y lower wall\n"), 2)
     #local in3 = 0;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
        #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
@@ -1704,10 +1708,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 2b) XY - horizontal walls/upper, Z = const                            
-    DebugMsg(concat("processing: X-Y upper wall\n"), 1)
+    DebugMsg(concat("processing: X-Y upper wall\n"), 2)
     #local in3 = dimension_size(GVr,3)-1;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
        #for(in2,1,dimension_size(GVr,2)-2)    // y axis 2nd
@@ -1726,11 +1730,11 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // vertical walls X-Z:
     // 3a) XZ - vertical walls/origin, Y=const                            
-    DebugMsg(concat("processing: X-Z origin wall\n"), 1)
+    DebugMsg(concat("processing: X-Z origin wall\n"), 2)
     #local in2 = 0;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
        #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
@@ -1749,10 +1753,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 3b) XZ - vertical walls/distant, Y=const                                                        
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in2 = dimension_size(GVr,2)-1;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
        #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
@@ -1771,11 +1775,11 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // vertical walls Y-Z:
     // 3a) YZ - vertical walls/origin, X=const                            
-    DebugMsg( concat("processing: X-Z origin wall\n", "Debug Test\n==\n"), 1)
+    DebugMsg( concat("processing: X-Z origin wall\n", "Debug Test\n==\n"), 2)
     #local in1 = 0;
     #for(in2,1,dimension_size(GVr,2)-2)       // x axis last
        #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
@@ -1794,10 +1798,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end                                            
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 3b) YZ - vertical walls/distant, X=const                                                        
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #for(in2,1,dimension_size(GVr,2)-2)       // x axis last
        #for(in3,1,dimension_size(GVr,3)-2)    // y axis 2nd
@@ -1816,11 +1820,11 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
        #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4) 12 edges        
     // 4x,1) along X axis Y==0; Z==0;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in2 = 0;
     #local in3 = 0;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
@@ -1838,10 +1842,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4x,2) along X axis, Y==max; Z==max;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in2 = dimension_size(GVr,2)-1;
     #local in3 = dimension_size(GVr,3)-1;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
@@ -1859,10 +1863,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4x,3) along X axis, Y==max; Z==0;
-    DebugMsg( concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg( concat("processing: X-Y distant wall\n"), 2)
     #local in2 = dimension_size(GVr,2)-1;
     #local in3 = 0;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
@@ -1880,10 +1884,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4x,4) along X axis, Y==0; Z==max;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in2 = 0;
     #local in3 = dimension_size(GVr,3)-1;
     #for(in1,1,dimension_size(GVr,1)-2)       // x axis last
@@ -1901,10 +1905,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4y,1) along Y axis X==0; Z==0;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = 0;
     #local in3 = 0;
     #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis 
@@ -1922,10 +1926,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4y,2) along Y axis, X==max; Z==max;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in3 = dimension_size(GVr,3)-1;
     #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis 
@@ -1943,10 +1947,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4y,3) along Y axis, X==max; Z==0;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in3 = 0;
     #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis
@@ -1964,10 +1968,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = vTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = vTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4y,4) along Y axis, X==0; Z==max;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = 0;
     #local in3 = dimension_size(GVr,3)-1;
     #for(in2,1,dimension_size(GVr,2)-2)       // scan y axis
@@ -1985,11 +1989,11 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     //===========
     // 4z,1) along Z axis X==0; Y==0;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = 0;
     #local in2 = 0;
     #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis 
@@ -2007,7 +2011,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4z,2) along Z axis, X==max; Y==max;
     // #debug concat("processing: X-Y distant wall\n")
@@ -2028,10 +2032,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4z,3) along Z axis, X==max; Y==0;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = dimension_size(GVr,1)-1;
     #local in2 = 0;
     #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis
@@ -2049,10 +2053,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
                 #if (_Gmin > gTmp) #local _Gmin = gTmp; #end
                 #if (_Gmax < gTmp) #local _Gmax = gTmp; #end
     #end   
-    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 1)
+    DebugMsg(concat("Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 2)
     
     // 4z,4) along Z axis, X==0; Y==max;
-    DebugMsg(concat("processing: X-Y distant wall\n"), 1)
+    DebugMsg(concat("processing: X-Y distant wall\n"), 2)
     #local in1 = 0;
     #local in2 = dimension_size(GVr,2)-1;
     #for(in3,1,dimension_size(GVr,3)-2)       // scan z axis
@@ -2072,7 +2076,7 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
     #end   
     DebugMsg(concat("Finally: Grad Min=", str(_Gmin,10,5), "; Grad Max=",str(_Gmax,10,5),"\n"), 0)
     
-    #if (Debug>0) 
+    #if (Debug>1) 
         DebugMsg(concat("Debugging level:",str(Debug,3,0),"\n"), 0)
         #for(in1,0,dimension_size(GVr,1)-1)       // x axis last
            #for(in2,0,dimension_size(GVr,2)-1)    // y axis 2nd
@@ -2083,7 +2087,10 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
         #end 
     #end                                           
     #declare GradMin = _Gmin;
-    #declare GradMax = _Gmin;
+    #declare GradMax = _Gmax;      
+    
+    DebugMsg(concat("Finally 1: Grad Min=",str(GradMin,10,7),"; Grad Max=",str(GradMax,10,7),";\n"), 1)
+    
 #end // #macro ComputeGridGradient()
 
 
@@ -3746,11 +3753,13 @@ DebugMsg(concat("=>dd= ",str(_dd,6,4),"==\n"), 1)
 /////////////////////////////////////////////////////
 
 #else
- DebugMsg("Module Potential recalled\n",1)
+ DebugMsg("Module \"Potential\" recalled!\n",1)
  #ifndef (_CallStack )
-   #declare _CallStack = "Call stack:\n"  
- #end
- #declare _CallStack = concat(_CallStack, _ModuleDescription,"\n")
+   #declare _CallStack = ">Call stack:\n"  
+ #end                         
+ DebugMsg(_CallStack, 1)
+ #declare _CallStack = concat(_CallStack, _ModuleDescription_Pote,"\n")
+ DebugMsg(_CallStack, 1)
 #end // ...#ifndef _Potential_INC
 // brutal reserve
 //                        InterCubic( x,y,z,    // conversion from real to internal representation

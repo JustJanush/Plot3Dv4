@@ -18,7 +18,11 @@
 *  GNU GPL v.3 License
 *  (c) 2012-now by Janusz Opi³a Ph.D.         
 *  AGH University of Science and Technology
-* HISTORY
+* HISTORY                
+*  2024-02-06, you may now decide if setting CameraTarget moves camera or not. Previously
+               camera was always moved. Default is DON't.
+*  2024-01-19,  added "shadowless" to light_source{VC color rgb 1.5 shadowless }
+*               in InsertBarKeyFrItemBelow and InsertBarKeyFrItem;
 *  2016-10-12, v3.2.0.7, IntelligentEyeT - Target was not applied
 *  2016-03-02, v3.2.0.6
 *    - light_source added in InsertBarKeyFrItem, InsertBarKeyFrItemBelow definition
@@ -31,16 +35,17 @@
 ****
   end of RoboDoc comment
 ****/
-
-#ifndef(Cameras_INC)
-#declare Cameras_INC = "2018-09-17"; // last modification date
 #version 3.7;
+#ifndef(Cameras_INC)
+#declare Cameras_INC = "2024-02-06"; // last modification date
+
 // common includes & definitions
 #declare _FileName   = "Cameras.inc";
-#declare _FileVerMaj = "4.0.0";
+#declare _FileVerMaj = "4.0.1";
 #declare _FileVerMin = Cameras_INC;
 
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _ModuleDescription_Came = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Came
 #include "math.inc"
 
 #ifndef (Debug) // Just 4 safety
@@ -66,9 +71,45 @@
 #declare CameraAngle  =  35 ;        // camera viewing angle
 #declare CameraAngleSet = false;     // default setting is "no explicit setting"
 #declare CameraTarget = <0, 0, 0>;   // virtual point Camera looks at
-#declare CameraShift  = <0, 0, 0>;   // additional shift in camera position
+#declare CameraShift  = <0, 0, 0>;   // 2024-02-06 - new behavior
+#declare CameraFollowsTarget = no;   // Setting of new CameraTarget doesn't change Camera position.
 /******/
 
+
+/****f* Cameras.inc/SetCameraFollowsTarget
+* PURPOSE
+*  Does SetCameraTarget() means moving camera to? 
+*  WARNING: POVRay coordinates!
+* SYNOPSIS
+*/
+#macro SetCameraFollowsTarget ( _YN ) // decider
+/*
+ * INPUTS
+ *  _YN - boolean - move or not move
+ * SEE ALSO
+ *  SetCameraAngle ()
+ *  SetCameraShift ()
+ ****/
+    #declare CameraFollowsTarget = yes;
+#end
+
+
+/****f* Cameras.inc/SetCameraFollowsTarget
+* PURPOSE
+*  Does SetCameraTarget() means moving camera to? 
+*  WARNING: POVRay coordinates!
+* SYNOPSIS
+*/
+#macro UnsetCameraFollowsTarget ()
+/*
+ * INPUTS
+ *  no inputs - always sets CameraFollowsTarget to 'no'
+ * SEE ALSO
+ *  SetCameraAngle ()
+ *  SetCameraShift ()
+ ****/
+    #declare CameraFollowsTarget = no;
+#end
 
 /****f* Cameras.inc/SetCameraTarget
 * PURPOSE
@@ -189,14 +230,14 @@ SetOrthographic (float OSc)
 * SYNOPSIS                        
 */
 #macro PrepareCamera (_lam, _phi, _r)
-  // lam : longitude: angle from '-z' axis(PovRay) ie. 'x' axis in real world
-  // phi : angle above POvRay '-z*x' plane -> X*Y plane in real world: latitude
-  // r   : distance from XYZ origin
 /*
  * INPUTS
  *  _lam, _phi, _r -  floats: longitude[deg], latitude[deg], distance from actual watch point [scene units] 
  *                 possibly set/reset by SetCameraTarget () macro. If _r<>1 then SET CameraOn (r) with r=1!
  *                 or unexpected behaviour may be observed.   
+ *  lam : longitude: angle from '-z' axis(PovRay) ie. 'x' axis in real world
+ *  phi : angle above POvRay '-z*x' plane -> X*Y plane in real world: latitude
+ *  r   : distance from XYZ origin
  * SEE ALSO
  *  CameraOn ()
  *  setPerspective ()
@@ -238,9 +279,9 @@ CameraOn (float Dist)
       #declare Zcent=(SceneMinZ+SceneMaxZ)/2;
   #end
 
-  #declare camera_x=Dist*camera_x + Xcent + CameraShift.y;     // new shifted location of camera
-  #declare camera_y=Dist*camera_y + Ycent + CameraShift.z;
-  #declare camera_z=Dist*camera_z + Zcent - CameraShift.x;
+  #declare camera_x=Dist*camera_x + (CameraFollowsTarget?Xcent:0.0) + CameraShift.y;     // new shifted location of camera
+  #declare camera_y=Dist*camera_y + (CameraFollowsTarget?Ycent:0.0) + CameraShift.z;
+  #declare camera_z=Dist*camera_z + (CameraFollowsTarget?Zcent:0.0) - CameraShift.x;
 
   #declare angiel=1.4*max(Xcent, Ycent, Zcent)/VDist(<camera_x, camera_y, camera_z>, <Xcent, Ycent, Zcent>);
 //1.4*tangens of angle between camera and most distant chart point
@@ -296,7 +337,10 @@ IntelligentEye (lam, phi, r)
   #declare Zcent=(SceneMinZ+SceneMaxZ)/2;
 
   camera{
-     location <camera_x+Xcent,camera_y+Ycent, camera_z+Zcent>        // coordinates of the camera
+     location<
+       camera_x+(CameraFollowsTarget?Xcent:0.0),
+       camera_y+(CameraFollowsTarget?Ycent:0.0), 
+       camera_z+(CameraFollowsTarget?Zcent:0.0)>        // coordinates of the camera
      right x*image_width/image_height
      up y
      look_at <Xcent, Ycent, Zcent>        // camera focuses at that point
@@ -384,7 +428,9 @@ IntelligentEyeT (lam, phi, r)
   #declare  camera_z =-r*cos(phi)*cos(lam);
   camera{
      perspective
-     location <camera_x+Xcent, camera_y+Ycent, camera_z+Zcent> // coordinates of the camera
+     location <camera_x+(CameraFollowsTarget?Xcent:0.0), 
+               camera_y+(CameraFollowsTarget?Ycent:0.0), 
+               camera_z+(CameraFollowsTarget?Zcent:0.0)> // coordinates of the camera
      look_at CameraTarget                                      // Camera looks at that point-set previously by SetTarget macro
   } // camera
 #end
@@ -477,7 +523,6 @@ IntelligentEyeT (lam, phi, r)
   #declare  camera_x = r*cos(phi)*sin(lam)+CameraTarget.x;
   #declare  camera_y = r*sin(phi)+CameraTarget.y;
   #declare  camera_z =-r*cos(phi)*cos(lam)+CameraTarget.z;                                   
-  
   
   camera{
      perspective
@@ -760,7 +805,7 @@ union{
   #local VUD = -z;
 #end  
 
-light_source{VC color rgb 1.5}
+light_source{VC color rgb 1.5 shadowless }
 
 #ifdef (_Ts)
     #local _txt   = object{Text(_Ts)};
@@ -860,7 +905,7 @@ merge{
   #local VUD = -z;
 #end  
 
-light_source{VC color rgb .5}
+light_source{VC color rgb .5 shadowless}
 
 #local V3 = VC + 5*vnormalize(VCT+_vf*VUD); // in front of Camera
 union{
@@ -1069,6 +1114,13 @@ union{
    direction abs(_Zoom)*_d
  }
 #end                 
+
+#else
+ DebugMsg("Module \"Cameras\" recalled\n",1)
+ #ifndef (_CallStack )  // safety...
+   #declare _CallStack = "Call stack:\n"  
+ #end
+ #declare _CallStack = concat(_CallStack, _ModuleDescription_Came,"\n")
          
 #end // Cameras_INC
 

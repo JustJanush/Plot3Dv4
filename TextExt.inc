@@ -38,14 +38,16 @@
   end of RoboDoc comment
 ****/
 
-#version 3.7;
+#version version;
 #ifndef(TextExt_INC)
-#declare TextExt_INC = "2023-08-30"; // last edition date
+#declare TextExt_INC = "2023-09-27"; // last edition date
 
 #declare _FileName   = "TextExt.inc";
 #declare _FileVerMaj = "4.2.1";
 #declare _FileVerMin = TextExt_INC;
-DebugMsg( concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n"), 0)
+
+#declare _ModuleDescription_TExt = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_TExt
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;

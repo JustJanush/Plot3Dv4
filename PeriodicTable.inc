@@ -33,7 +33,9 @@
 #local _FileName   = "PeriodicTable.INC";
 #local _FileVerMaj = "4.0.1";
 #local _FileVerMin = PeriodicTable_INC;
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+
+#declare _ModuleDescription_PTab = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_PTab
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;
@@ -41,8 +43,8 @@
 
 #include "colors.inc"
 #include "textures.inc"
-#include "Cameras.inc"
-#include "ColorMaps.inc"
+// #include "Cameras.inc"
+// #include "ColorMaps.inc"
 
 // dictionary of elements  - external interface 
 #declare _NElements = 22; // 1.._NElements
@@ -76,5 +78,14 @@
 };                
                        
 #declare _PT = PeriodicTable; // internal representation                       
+
+#else
+ DebugMsg("Module \"Potential\" recalled!\n",1)
+ #ifndef (_CallStack )
+   #declare _CallStack = "Call stack:\n"  
+ #end                         
+ DebugMsg(_CallStack,1)
+ #declare _CallStack = concat(_CallStack, _ModuleDescription_Pote,"\n")
+ DebugMsg(_CallStack,1)
 
 #end // #ifndef(PeriodicTable_INC)

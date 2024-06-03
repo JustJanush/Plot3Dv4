@@ -22,16 +22,17 @@
 ****
   end of RoboDoc comment
 ****/
-
+#version version;
 #ifndef(ColorMaps_INC)
 #declare ColorMaps_INC="2020-05-22"; // last modification date
 // common includes & definitions
-#version 3.7;
-#declare _FileName   = "ColorMaps.INC";
+
+#declare _FileName   = "ColorMaps.inc";
 #declare _FileVerMaj = "4.0.2";
 #declare _FileVerMin = ColorMaps_INC;
 
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _ModuleDescription_Colo = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Colo
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;
@@ -293,5 +294,12 @@
 #macro SetRGBMap(_RGBm)
     #declare _RGBMap = _RGBm;
 #end
+
+#else
+ DebugMsg("Module \"ColorMaps\" recalled\n",1)
+ #ifndef (_CallStack )  // safety...
+   #declare _CallStack = "Call stack:\n"  
+ #end
+ #declare _CallStack = concat(_CallStack, _ModuleDescription_Colo,"\n")
 
 #end // #ifndef(ColorMaps_INC)

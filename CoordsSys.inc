@@ -37,15 +37,15 @@
 /// API macro     - designed to be called by final user
 /// Xp, Yp, Zp    - scene coordinates
 /// Xr, Yr, Zr    - real world coords.
-
+#version 3.7;
 #ifndef(CoordsSys_INC)
 #declare CoordsSys_INC = "2015-12-11"; // last modification date
-#version 3.7;
+#local _FileName     = "CoordsSys.inc";
 #local _FileVerMaj   = "3.1.0.2";
 #local _FileVerMin   = CoordsSys_INC;
-#local _FileName     = "CoordsSys.inc";
 
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _ModuleDescription_Coor = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Coor
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;

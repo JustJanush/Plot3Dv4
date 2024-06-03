@@ -41,7 +41,8 @@
 #declare _FileName   = "Structures.inc";
 #declare _FileVerMaj = "4.0.4";
 #declare _FileVerMin = Structures_INC;
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _ModuleDescription_Stru = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Stru
 
 #ifndef (Debug) // Just 4 safety
    #declare Debug=0;

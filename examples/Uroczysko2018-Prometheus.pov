@@ -304,7 +304,8 @@ SetVShift(1E-3)
     #declare SurfError = 0;//ComputeDelta(KernFun, KernLim, _smth );
     #declare SurfError = 0;//SurfError/NumPts; // MSE 
     #declare _Ts = concat("KDE= ", KernName, ", smth= ",TrimStr(str(_smth,12,8)),", MSE= ", TrimStr(str(SurfError,20,17)), ", N_G=",TrimStr(str(Nx*Ny,5,0)),", daytime: ", TrimStr(str(_TimSTR,2,0)),":00  ") 
-    #debug _Ts
+    #debug _Ts                
+    #undef _Ts
     #declare wykres = union {
       DrawAllPatchesGeo() 
 //      DrawRNodes(.2)          
@@ -313,7 +314,7 @@ SetVShift(1E-3)
            texture{
 //              Silver1
               pigment{color rgb .3 } //<0,1,0>
-              finish{ Dull }
+              finish{ Dull emission .5 }
            }
         }
       no_reflection  
@@ -341,7 +342,7 @@ SetVShift(1E-3)
         rotate<-90,0,0>        
         texture{ 
             pigment{image_map{ png "UroczyskoHDCM1.png"}}
-          // finish{ Dull }
+            finish{ Dull emission .5 }
         } // end of texture    
 
 //       texture{ 
@@ -361,9 +362,9 @@ SetVShift(1E-3)
 //     #end   
 // }
 // */      
-    #local _alfx = -95;
-    #local _thex =  31;
-    #local _dstx =  100;
+    #local _alfx =  17;
+    #local _thex =  51;
+    #local _dstx =  79;
     #local _angx =  55;
     #break
 #case (2)
@@ -374,7 +375,7 @@ SetVShift(1E-3)
                 translate <0.0, 0.035, 0>
                 texture{ 
                     pigment{image_map{ png "UroczyskoHDCM1.png"}}
-                    finish{ Dull }
+                    finish{ Dull emission .5}
                 } // end of texture
             } // end of height_field ----------------------------------
             box{<.00001,.035001,2> <.99999,.99999,-1> 
@@ -387,10 +388,11 @@ SetVShift(1E-3)
         } 
     #declare _Ts = concat("Height map, time: ", TrimStr(str(_TimSTR,2,0)),":00  "); //" [      Mean Sq. Error = ");//, TrimStr(str(SurfError,12,7)), "     ]")
     #debug _Ts
+    #undef _Ts
     object { wykres }        
-    #local _alfx = -95;
-    #local _thex =  31;
-    #local _dstx =  100;
+    #local _alfx =  15;
+    #local _thex =  51;
+    #local _dstx =  72;
     #local _angx =  55;       
     #break
 #else    

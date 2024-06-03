@@ -42,16 +42,17 @@
 ****
   end of RoboDoc comment
 ****/
-
+#version version;
 #ifndef(_CommonDefs_INC)
-#declare _CommonDefs_INC="2021-06-09"; // last modification date
+#declare _CommonDefs_INC="2023-09-27"; // last modification date
 // common includes & definitions
-#version 3.7;
-#local _FileName   = "CommonDefs.INC";
+
+#local _FileName   = "CommonDefs.inc";
 #local _FileVerMaj = "4.0.0.1";
 #local _FileVerMin = _CommonDefs_INC;
 
-#debug concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n")
+#declare _ModuleDescription_Comm = concat("\n[==> ", _FileName,", ver: ", _FileVerMaj, ", build:  ", _FileVerMin, " <==]\n");
+#debug   _ModuleDescription_Comm
 // ============================================
 
 // standard modules
@@ -595,17 +596,17 @@ material {
   #if (_lvl = 0) 
     #debug _msg  
   #else 
-    #if (bitwise_and( _lvl,Debug))
+    #if (bitwise_and( _lvl, Debug)) // allows for combined Debug levels
        #debug _msg
     #end      
   #end   
 #end // macro
 
 #else
- DebugMsg("Module Potential recalled\n",1)
- #ifndef (_CallStack )
+ DebugMsg("Module \"CommonDefs\" recalled\n",1)
+ #ifndef (_CallStack )  // safety...
    #declare _CallStack = "Call stack:\n"  
  #end
- #declare _CallStack = concat(_CallStack, _ModuleDescription,"\n")
+ #declare _CallStack = concat(_CallStack, _ModuleDescription_Comm,"\n")
 
 #end // #ifndef(_CommonDefs_INC)
